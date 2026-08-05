@@ -1,0 +1,89 @@
+package com.swxt.manager.controller;
+
+import com.swxt.manager.config.Core;
+import com.swxt.manager.dto.Result;
+import com.swxt.manager.dto.order.CreateOrderRequest;
+import com.swxt.manager.entity.OrderInfo;
+import com.swxt.manager.service.OrderService;
+import com.swxt.manager.service.SystemLogService;
+import com.swxt.manager.Utils.SecurityUtil;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 订单控制器：用户下单/查看自己的订单，操作员与管理员查看/处理所有订单
+ */
+@RestController
+@RequestMapping("/orders")
+public class OrderController {
+
+    private final OrderService orderService;
+    private final SystemLogService logService;
+
+    public OrderController(OrderService orderService, SystemLogService logService) {
+        this.orderService = orderService;
+        this.logService = logService;
+    }
+
+    /**
+     * 创建订单
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('USER','OPERATOR')")
+    public Result<OrderInfo> createOrder(@RequestBody CreateOrderRequest request) {
+        Long userId = SecurityUtil.getUserId();
+        String username = SecurityUtil.getUsername();
+        OrderInfo order = orderService.createOrder(userId, username, request);
+        logService.record(Core.ActionType.CREATE, Core.TargetType.ORDER, order.getId(), Core.LogResult.SUCCESS);
+        return Result.success(order);
+    }
+
+    /**
+     * 查询当前用户的订单
+     */
+    @GetMapping("/my")
+    @PreAuthorize("hasAnyRole('USER','OPERATOR')")
+    public Result<List<OrderInfo>> myOrders() {
+        Long userId = SecurityUtil.getUserId();
+        return Result.success(orderService.listByUserId(userId));
+    }
+
+    /**
+     * 查询全部订单
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
+    public Result<List<OrderInfo>> listAll() {
+        return Result.success(orderService.listAll());
+    }
+
+    /**
+     * 查询订单详情（操作员与管理员可用，避免普通用户越权查看他人订单）
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
+    public Result<OrderInfo> detail(@PathVariable Long id) {
+        OrderInfo order = orderService.getOrderDetail(id);
+        if (order == null) {
+            return Result.error(404, "订单不存在");
+        }
+        return Result.success(order);
+    }
+
+    /**
+     * 更新订单状态
+     */
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
+    public Result<Void> updateStatus(@PathVariable Long id, @RequestParam String status) {
+        boolean updated = orderService.updateStatus(id, status);
+        if (updated) {
+            logService.record(Core.ActionType.UPDATE, Core.TargetType.ORDER, id, Core.LogResult.SUCCESS);
+            return Result.success();
+        }
+        logService.record(Core.ActionType.UPDATE, Core.TargetType.ORDER, id, Core.LogResult.FAIL);
+        return Result.error(404, "订单不存在");
+    }
+}

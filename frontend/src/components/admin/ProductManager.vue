@@ -1,0 +1,472 @@
+<template>
+
+    <div class="product-management">
+        <div class="page-header">
+            <h2>商品管理</h2>
+            <button class="back-btn" @click="router.push('/admin/home')">返回</button>
+        </div>
+
+        <div v-if="error" class="error">{{ error }}</div>
+        <div v-if="isCreating" class="edit-panel">
+            <h3>新增商品</h3>
+            <div class="form-row form-row-image">
+                <label>商品图片</label>
+                <input type="file" accept="image/png,image/jpeg,image/gif,image/webp"
+                    @change="(e) => handleImageUpload(e, 'create')" />
+                <img v-if="createForm.image" class="form-image-preview" :src="normalizeImage(createForm.image)"
+                    alt="预览" />
+            </div>
+            <div class="form-row">
+                <label>商品名</label>
+                <input v-model="createForm.name" type="text" />
+            </div>
+            <div class="form-row">
+                <label>分类ID</label>
+                <input v-model.number="createForm.categoryId" type="number" />
+            </div>
+            <div class="form-row">
+                <label>价格</label>
+                <input v-model.number="createForm.price" type="number" />
+            </div>
+            <div class="form-row">
+                <label>描述</label>
+                <input v-model="createForm.description" type="text" />
+            </div>
+            <div class="form-row">
+                <label>库存</label>
+                <input v-model.number="createForm.stock" type="number" />
+            </div>
+            <div class="form-row">
+                <label>状态</label>
+                <select v-model="createForm.status">
+                    <option :value="1">启用</option>
+                    <option :value="0">禁用</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button @click="createNewProduct">确认新增</button>
+                <button class="cancel-btn" @click="cancelCreate">取消</button>
+            </div>
+        </div>
+
+        <div v-else-if="showing" class="edit-panel">
+            <h3>商品详情</h3>
+            <div class="form-row form-row-image">
+                <label>商品图片</label>
+                <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" :disabled="!editing"
+                    @change="(e) => handleImageUpload(e, 'edit')" />
+                <img v-if="editForm.image" class="form-image-preview" :src="normalizeImage(editForm.image)" alt="预览" />
+            </div>
+            <div class="form-row">
+                <label>商品名</label>
+                <input v-model="editForm.name" type="text" :disabled="!editing" />
+            </div>
+            <div class="form-row">
+                <label>分类ID</label>
+                <input v-model.number="editForm.categoryId" type="number" :disabled="!editing" />
+            </div>
+            <div class="form-row">
+                <label>价格</label>
+                <input v-model.number="editForm.price" type="number" :disabled="!editing" />
+            </div>
+            <div class="form-row">
+                <label>描述</label>
+                <input v-model="editForm.description" type="text" :disabled="!editing" />
+            </div>
+            <div class="form-row">
+                <label>库存</label>
+                <input v-model.number="editForm.stock" type="number" :disabled="!editing" />
+            </div>
+            <div class="form-row">
+                <label>状态</label>
+                <select v-model="editForm.status" :disabled="!editing">
+                    <option :value="1">启用</option>
+                    <option :value="0">禁用</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button v-if="editing" @click="saveEdit">保存</button>
+                <button v-if="!editing" @click="editing = !editing">编辑</button>
+                <button class="cancel-btn" @click="cancelEdit">取消</button>
+            </div>
+        </div>
+
+        <template v-else-if="showCategoryPanel">
+            <div class="toolbar">
+                <div></div>
+                <div class="toolbar-actions">
+                    <button class="toolbar-btn" @click="showCategoryPanel = false">返回商品管理</button>
+                </div>
+            </div>
+            <component :is="CategoryManager" @close="showCategoryPanel = false" />
+        </template>
+
+        <SearchToolbar v-else v-model="searchKeyword" placeholder="搜索商品名/分类..." @search="handleSearch">
+            <template #actions>
+                <button class="toolbar-btn" @click="openCreate">新增商品</button>
+                <button class="toolbar-btn" @click="showCategoryPanel = true">分类管理</button>
+            </template>
+        </SearchToolbar>
+
+        <div class="table-wrap" v-if="!isCreating && !showing && !showCategoryPanel">
+            <table class="product-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>图片</th>
+                        <th>商品名</th>
+                        <th>分类ID</th>
+                        <th>价格</th>
+                        <th>库存</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="product in products" :key="product.id"
+                        :class="{ 'low-stock-row': isLowStock(product.stock) }">
+                        <td>{{ product.id }}</td>
+                        <td class="product-img-cell">
+                            <img v-if="product.image && !imageErrorMap[product.id]" class="product-img-thumb"
+                                :src="normalizeImage(product.image)" :alt="product.name"
+                                @error="onImageError(product.id)" />
+                            <span v-else class="no-image">🖼️ 无图</span>
+                        </td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.categoryId }}</td>
+                        <td>{{ configStore.configs['currency_symbol'] || '¥' }}{{ formatPrice(product.price) }}</td>
+                        <td :class="{ 'low-stock-cell': isLowStock(product.stock) }">{{ product.stock }}</td>
+                        <td>{{ product.status === 1 ? '启用' : '禁用' }}</td>
+                        <td>
+                            <button class="action-btn" @click="showProduct(product)">查询</button>
+                            <button class="action-btn delete" @click="deleteProduct(product)">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <Pagination v-if="!isCreating && !showing && !showCategoryPanel" :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
+
+
+        <div v-if="stockAlertVisible" class="stock-alert-overlay" @click.self="stockAlertVisible = false">
+            <div class="stock-alert-modal">
+                <h3>⚠️ 库存预警</h3>
+                <p>以下商品库存低于预警阈值（{{ alertThreshold }}），请及时补货：</p>
+                <ul class="stock-alert-list">
+                    <li v-for="item in lowStockItems" :key="item.id">
+                        <span class="alert-name">{{ item.name }}</span>
+                        <span class="alert-stock">剩余 {{ item.stock }} 件</span>
+                    </li>
+                </ul>
+                <button class="stock-alert-btn" @click="stockAlertVisible = false">知道了</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script setup lang="ts">
+
+import { ref, onMounted } from 'vue'
+import { get, post, put, del, upload } from '../../utils/request'
+import { configStore, getConfig } from '../../utils/configStore'
+import router from '../../route/Router'
+import CategoryManager from './CategoryManager.vue'
+import Pagination from '../common/Pagination.vue'
+import SearchToolbar from '../common/SearchToolbar.vue'
+
+const error = ref('')
+
+interface Product {
+    id: number
+    name: string
+    categoryId: number
+    price: number
+    image: string
+    description: string
+    stock: number
+    status: number
+}
+
+const products = ref<Product[]>([])
+const searchKeyword = ref('')
+const imageErrorMap = ref<Record<number, boolean>>({})
+
+const editForm = ref<Product>({
+    id: 0,
+    name: '',
+    categoryId: 0,
+    price: 0,
+    image: '',
+    description: '',
+    stock: 0,
+    status: 1
+})
+const showing = ref(false)
+const editing = ref(false)
+const isCreating = ref<boolean>(false)
+const showCategoryPanel = ref(false)
+
+const createForm = ref<{ name: string; categoryId: number; price: number; image: string; description: string; stock: number; status: number }>({
+    name: '',
+    categoryId: 0,
+    price: 0,
+    image: '',
+    description: '',
+    stock: 0,
+    status: 1,
+})
+
+const page = ref(1)
+const size = ref(parseInt(getConfig('page_size')) || 10)
+const total = ref(0)
+const totalPages = ref(0)
+const isSearching = ref(false)
+
+interface PageResult<T> {
+    list: T[]
+    total: number
+    page: number
+    size: number
+    totalPages: number
+}
+
+/**
+ * 图片地址规范化：绝对 URL 原样返回，其余补上前导 /
+ */
+function normalizeImage(src: string): string {
+    if (!src) return ''
+    if (/^https?:/i.test(src)) return src
+    if (/^\//.test(src)) return src
+    return '/' + src
+}
+
+/**
+ * 图片加载失败时记录，切换为占位提示
+ */
+function onImageError(id: number) {
+    imageErrorMap.value[id] = true
+}
+
+/**
+ * 价格格式化：保留两位小数
+ */
+function formatPrice(n: number): string {
+    const num = Number(n)
+    if (Number.isNaN(num)) return String(n)
+    return num.toFixed(2)
+}
+
+/**
+ * 图片上传：FormData 发送到 /upload，成功后写入对应表单的 image 字段
+ */
+async function handleImageUpload(e: Event, target: 'create' | 'edit') {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await upload<string>('/upload', formData)
+        if (res.success && res.data) {
+            if (target === 'create') {
+                createForm.value.image = res.data
+            } else {
+                editForm.value.image = res.data
+            }
+        } else {
+            error.value = res.message || '图片上传失败'
+        }
+    } catch (err) {
+        error.value = err instanceof Error ? err.message : '网络错误'
+    }
+    input.value = ''
+}
+
+/**
+ * 判断是否为低库存（依据库存预警开关与阈值配置）
+ */
+function isLowStock(stock: number): boolean {
+    return getConfig('enable_stock_warning') === 'true' && stock < parseInt(getConfig('low_stock_threshold') || '50', 10)
+}
+
+
+interface LowStockItem {
+    id: number
+    name: string
+    stock: number
+}
+const stockAlertVisible = ref(false)
+const lowStockItems = ref<LowStockItem[]>([])
+const alertThreshold = ref(0)
+
+/**
+ * 检查低库存商品并按预警阈值过滤，有则弹出预警
+ */
+async function checkLowStock() {
+    if (getConfig('enable_stock_warning') !== 'true') return
+    alertThreshold.value = parseInt(getConfig('low_stock_threshold') || '50', 10)
+    try {
+        const res = await get<PageResult<Product>>(`/products?page=1&size=1000`)
+        if (res.success && res.data?.list) {
+            lowStockItems.value = res.data.list.filter(p => p.stock < alertThreshold.value)
+            if (lowStockItems.value.length > 0) {
+                stockAlertVisible.value = true
+            }
+        }
+    } catch {
+
+    }
+}
+
+function openCreate() {
+    createForm.value = { name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 }
+    error.value = ''
+    isCreating.value = true
+}
+
+function cancelCreate() {
+    isCreating.value = false
+    error.value = ''
+}
+
+async function loadData() {
+    if (isSearching.value) {
+        await searchProducts()
+    } else {
+        await loadProducts()
+    }
+}
+
+async function searchProducts() {
+    error.value = ''
+    try {
+        const res = await get<PageResult<Product>>(`/products/search?value=${encodeURIComponent(searchKeyword.value)}&page=${page.value}&size=${size.value}`)
+        if (res.success) {
+            products.value = res.data.list
+            total.value = res.data.total
+            totalPages.value = res.data.totalPages
+            page.value = res.data.page
+        } else {
+            error.value = res.message || '搜索失败'
+        }
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : '网络错误'
+    }
+}
+
+async function handleSearch() {
+    page.value = 1
+    isSearching.value = searchKeyword.value !== ''
+    await loadData()
+}
+
+onMounted(async () => {
+    await loadProducts()
+    checkLowStock()
+})
+
+async function loadProducts() {
+    error.value = ''
+    try {
+        const res = await get<PageResult<Product>>(`/products?page=${page.value}&size=${size.value}`)
+        if (res.success) {
+            products.value = res.data.list
+            total.value = res.data.total
+            totalPages.value = res.data.totalPages
+            page.value = res.data.page
+        } else {
+            error.value = res.message || '加载商品列表失败'
+        }
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : '网络错误'
+    }
+}
+
+function goToPage(target: number) {
+    if (target < 1 || (totalPages.value > 0 && target > totalPages.value)) return
+    page.value = target
+    loadData()
+}
+
+function showProduct(product: Product) {
+    editForm.value = { ...product }
+    editing.value = false
+    showing.value = true
+}
+
+function cancelEdit() {
+    showing.value = false
+    editing.value = false
+    error.value = ''
+}
+
+async function createNewProduct() {
+    error.value = ''
+    try {
+        const payload = {
+            name: createForm.value.name,
+            categoryId: createForm.value.categoryId,
+            price: createForm.value.price,
+            image: createForm.value.image,
+            description: createForm.value.description,
+            stock: createForm.value.stock,
+            status: createForm.value.status,
+        }
+        const res = await post<{ code: number; message: string }>('/products', payload)
+        if (res.success) {
+            isCreating.value = false
+            await loadData()
+        } else {
+            error.value = res.message || '新增失败'
+        }
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : '网络错误'
+    }
+}
+
+async function saveEdit() {
+    error.value = ''
+    editing.value = !editing.value
+    try {
+        const payload = {
+            id: editForm.value.id,
+            name: editForm.value.name,
+            categoryId: editForm.value.categoryId,
+            price: editForm.value.price,
+            image: editForm.value.image,
+            description: editForm.value.description,
+            stock: editForm.value.stock,
+            status: editForm.value.status,
+        }
+        const res = await put<{ code: number; message: string }>('/products', payload)
+        if (res.success) {
+            showing.value = false
+            await loadData()
+        } else {
+            error.value = res.message || '更新失败'
+        }
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : '网络错误'
+    }
+}
+
+async function deleteProduct(product: Product) {
+    if (!confirm(`确定删除商品 ${product.name} 吗？`)) return
+    error.value = ''
+    try {
+        const res = await del<{ code: number; message: string }>(`/products/${product.id}`)
+        if (res.success) {
+            if (products.value.length === 1 && page.value > 1) {
+                page.value -= 1
+            }
+            await loadData()
+        } else {
+            error.value = res.message || '删除失败'
+        }
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : '网络错误'
+    }
+}
+</script>
