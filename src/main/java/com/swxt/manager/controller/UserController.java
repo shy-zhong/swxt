@@ -10,15 +10,11 @@ import com.swxt.manager.dto.login.LoginResponse;
 import com.swxt.manager.dto.register.RegisterRequest;
 import com.swxt.manager.dto.register.RegisterResponse;
 import com.swxt.manager.dto.user.UpdateUserRequest;
-import com.swxt.manager.entity.Product;
 import com.swxt.manager.entity.User;
 import com.swxt.manager.service.SystemLogService;
 import com.swxt.manager.service.UserService;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
 
 
 @RestController
@@ -106,44 +102,6 @@ public class UserController {
     }
 
     /**
-     * 商品分页列表（支持综合筛选：keyword 名称模糊、categoryId 精确、priceMin/priceMax 价格区间、status 状态）
-     */
-    @GetMapping("/products")
-    public Result<PageResult<Product>> listProducts(
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "categoryId", required = false) Long categoryId,
-            @RequestParam(value = "priceMin", required = false) BigDecimal priceMin,
-            @RequestParam(value = "priceMax", required = false) BigDecimal priceMax,
-            @RequestParam(value = "status", required = false) Integer status
-    ) {
-        PageResult<Product> result = userService.listProductsPage(page, size, keyword, categoryId, priceMin, priceMax, status);
-        return Result.success(result);
-    }
-
-    /**
-     * 商品详情：按 ID 查询（含分类名称），供用户端详情页与管理端查询使用
-     */
-    @GetMapping("/products/{id}")
-    public Result<Product> getProductDetail(@PathVariable Long id) {
-        Product product = userService.getProductDetail(id);
-        if (product == null) {
-            return Result.error(404, "商品不存在");
-        }
-        return Result.success(product);
-    }
-
-    @GetMapping("/products/search")
-    public Result<PageResult<Product>> searchProducts(
-            @RequestParam(value = "value") String value,
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-        PageResult<Product> result = userService.searchProductsByCondition(value, page, size);
-        return Result.success(result);
-    }
-
-    /**
      * 删除用户
      */
     @DeleteMapping("/users/{id}")
@@ -171,50 +129,5 @@ public class UserController {
             return Result.success();
         }
         return Result.error(404, "用户不存在");
-    }
-
-    /**
-     * 新增商品
-     */
-    @PostMapping("/products")
-    @PreAuthorize("hasRole('ADMIN')")
-    public Result<Void> createProduct(@RequestBody Product product) {
-        boolean created = userService.createProduct(product);
-        logService.record(Core.ActionType.CREATE, Core.TargetType.PRODUCT, product.getId(),
-                created ? Core.LogResult.SUCCESS : Core.LogResult.FAIL);
-        if (created) {
-            return Result.success();
-        }
-        return Result.error(500, "商品创建失败");
-    }
-
-    /**
-     * 修改商品信息
-     */
-    @PutMapping("/products")
-    @PreAuthorize("hasRole('ADMIN')")
-    public Result<Void> updateProduct(@RequestBody Product product) {
-        boolean updated = userService.updateProduct(product);
-        logService.record(Core.ActionType.UPDATE, Core.TargetType.PRODUCT, product.getId(),
-                updated ? Core.LogResult.SUCCESS : Core.LogResult.FAIL);
-        if (updated) {
-            return Result.success();
-        }
-        return Result.error(404, "商品不存在");
-    }
-
-    /**
-     * 删除商品
-     */
-    @DeleteMapping("/products/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public Result<Void> deleteProduct(@PathVariable Long id) {
-        boolean deleted = userService.deleteProduct(id);
-        logService.record(Core.ActionType.DELETE, Core.TargetType.PRODUCT, id,
-                deleted ? Core.LogResult.SUCCESS : Core.LogResult.FAIL);
-        if (deleted) {
-            return Result.success();
-        }
-        return Result.error(404, "商品不存在");
     }
 }
