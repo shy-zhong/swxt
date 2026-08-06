@@ -101,12 +101,40 @@
             <component :is="CategoryManager" @close="showCategoryPanel = false" />
         </template>
 
-        <SearchToolbar v-else v-model="searchKeyword" placeholder="搜索商品名/分类..." @search="handleSearch">
+        <SearchToolbar v-else v-model="searchKeyword" placeholder="搜索商品名..." @search="handleSearch">
             <template #actions>
                 <button class="toolbar-btn" @click="openCreate">新增商品</button>
                 <button class="toolbar-btn" @click="showCategoryPanel = true">分类管理</button>
             </template>
         </SearchToolbar>
+
+        <div class="filter-bar" v-if="!isCreating && !showing && !showCategoryPanel">
+            <div class="filter-item">
+                <label>分类</label>
+                <select v-model="filterCategoryId">
+                    <option :value="0">全部分类</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>价格</label>
+                <input v-model.number="filterPriceMin" type="number" placeholder="最低价" />
+                <span class="filter-sep">~</span>
+                <input v-model.number="filterPriceMax" type="number" placeholder="最高价" />
+            </div>
+            <div class="filter-item">
+                <label>状态</label>
+                <select v-model="filterStatus">
+                    <option :value="-1">全部状态</option>
+                    <option :value="1">启用</option>
+                    <option :value="0">禁用</option>
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button class="filter-btn" @click="handleSearch">应用筛选</button>
+                <button class="filter-btn reset-btn" @click="resetFilters">重置</button>
+            </div>
+        </div>
 
         <div class="table-wrap" v-if="!isCreating && !showing && !showCategoryPanel">
             <table class="product-table">
@@ -115,7 +143,7 @@
                         <th>ID</th>
                         <th>图片</th>
                         <th>商品名</th>
-                        <th>分类ID</th>
+                        <th>分类</th>
                         <th>价格</th>
                         <th>库存</th>
                         <th>状态</th>
@@ -133,7 +161,7 @@
                             <span v-else class="no-image">🖼️ 无图</span>
                         </td>
                         <td>{{ product.name }}</td>
-                        <td>{{ product.categoryId }}</td>
+                        <td>{{ product.categoryName || product.categoryId }}</td>
                         <td>{{ configStore.configs['currency_symbol'] || '¥' }}{{ formatPrice(product.price) }}</td>
                         <td :class="{ 'low-stock-cell': isLowStock(product.stock) }">{{ product.stock }}</td>
                         <td>{{ product.status === 1 ? '启用' : '禁用' }}</td>
@@ -181,6 +209,7 @@ interface Product {
     id: number
     name: string
     categoryId: number
+    categoryName?: string
     price: number
     image: string
     description: string
@@ -191,6 +220,14 @@ interface Product {
 const products = ref<Product[]>([])
 const searchKeyword = ref('')
 const imageErrorMap = ref<Record<number, boolean>>({})
+
+/** 分类下拉数据 */
+const categories = ref<{ id: number; name: string }[]>([])
+/** 筛选条件：分类 ID（0=全部）、价格区间（null=不限）、状态（-1=全部） */
+const filterCategoryId = ref(0)
+const filterPriceMin = ref<number | null>(null)
+const filterPriceMax = ref<number | null>(null)
+const filterStatus = ref(-1)
 
 const editForm = ref<Product>({
     id: 0,
@@ -339,10 +376,35 @@ async function loadData() {
     }
 }
 
+/**
+ * 组装综合筛选查询参数（keyword/categoryId/priceMin/priceMax/status），空条件不携带
+ */
+function buildFilterParams(): string {
+    const params = new URLSearchParams()
+    if (searchKeyword.value.trim() !== '') params.set('keyword', searchKeyword.value.trim())
+    if (filterCategoryId.value > 0) params.set('categoryId', String(filterCategoryId.value))
+    if (filterPriceMin.value != null && !Number.isNaN(filterPriceMin.value)) params.set('priceMin', String(filterPriceMin.value))
+    if (filterPriceMax.value != null && !Number.isNaN(filterPriceMax.value)) params.set('priceMax', String(filterPriceMax.value))
+    if (filterStatus.value >= 0) params.set('status', String(filterStatus.value))
+    return params.toString()
+}
+
+/**
+ * 是否存在生效的筛选条件（决定是否走综合筛选查询）
+ */
+function hasActiveFilter(): boolean {
+    return searchKeyword.value.trim() !== ''
+        || filterCategoryId.value > 0
+        || (filterPriceMin.value != null && !Number.isNaN(filterPriceMin.value))
+        || (filterPriceMax.value != null && !Number.isNaN(filterPriceMax.value))
+        || filterStatus.value >= 0
+}
+
 async function searchProducts() {
     error.value = ''
     try {
-        const res = await get<PageResult<Product>>(`/products/search?value=${encodeURIComponent(searchKeyword.value)}&page=${page.value}&size=${size.value}`)
+        const qs = buildFilterParams()
+        const res = await get<PageResult<Product>>(`/products?page=${page.value}&size=${size.value}${qs ? '&' + qs : ''}`)
         if (res.success) {
             products.value = res.data.list
             total.value = res.data.total
@@ -358,13 +420,42 @@ async function searchProducts() {
 
 async function handleSearch() {
     page.value = 1
-    isSearching.value = searchKeyword.value !== ''
+    isSearching.value = hasActiveFilter()
     await loadData()
+}
+
+/**
+ * 重置全部筛选条件并重新加载
+ */
+function resetFilters() {
+    searchKeyword.value = ''
+    filterCategoryId.value = 0
+    filterPriceMin.value = null
+    filterPriceMax.value = null
+    filterStatus.value = -1
+    page.value = 1
+    isSearching.value = false
+    loadProducts()
+}
+
+/**
+ * 加载分类下拉数据（登录用户可查列表）
+ */
+async function loadCategories() {
+    try {
+        const res = await get<{ id: number; name: string }[]>('/categories')
+        if (res.success && Array.isArray(res.data)) {
+            categories.value = res.data
+        }
+    } catch {
+        // 分类加载失败不阻塞商品列表
+    }
 }
 
 onMounted(async () => {
     await loadProducts()
     checkLowStock()
+    loadCategories()
 })
 
 async function loadProducts() {

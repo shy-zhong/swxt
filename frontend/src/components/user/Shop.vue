@@ -64,8 +64,8 @@
           <input :value="detailProduct.name" type="text" disabled />
         </div>
         <div class="form-row">
-          <label>分类ID</label>
-          <input :value="detailProduct.categoryId" type="number" disabled />
+          <label>分类</label>
+          <input :value="detailProduct.categoryName || detailProduct.categoryId" type="text" disabled />
         </div>
         <div class="form-row">
           <label>价格</label>
@@ -106,6 +106,7 @@ interface Product {
   id: number
   name: string
   categoryId: number
+  categoryName?: string
   price: number
   image: string
   description: string
@@ -201,11 +202,21 @@ async function buyNow(product: Product) {
 }
 
 /**
- * 打开商品详情面板
+ * 打开商品详情面板：先调用独立详情接口 GET /products/{id} 拉取最新数据（含分类名称），失败时回退到列表行数据
  */
-function showDetail(product: Product) {
+async function showDetail(product: Product) {
   detailProduct.value = { ...product }
   detailVisible.value = true
+  try {
+    const res = await get<Product>(`/products/${product.id}`)
+    if (res.success && res.data) {
+      detailProduct.value = res.data
+    } else {
+      error.value = res.message || '加载详情失败'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '加载详情失败'
+  }
 }
 
 /**

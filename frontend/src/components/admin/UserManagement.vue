@@ -37,6 +37,10 @@
             普通用户
           </label>
           <label>
+            <input v-model="createForm.role" type="radio" value="OPERATOR" />
+            操作员
+          </label>
+          <label>
             <input v-model="createForm.role" type="radio" value="ADMIN" />
             管理员
           </label>

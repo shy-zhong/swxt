@@ -1,6 +1,7 @@
 package com.swxt.manager.controller;
 
 import com.swxt.manager.config.Core;
+import com.swxt.manager.dto.PageResult;
 import com.swxt.manager.dto.Result;
 import com.swxt.manager.dto.order.CreateOrderRequest;
 import com.swxt.manager.entity.OrderInfo;
@@ -56,12 +57,16 @@ public class OrderController {
     }
 
     /**
-     * 查询全部订单
+     * 查询全部订单（分页，支持按状态与关键词筛选）
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")
-    public Result<List<OrderInfo>> listAll() {
-        return Result.success(orderService.listAll());
+    public Result<PageResult<OrderInfo>> listAll(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        return Result.success(orderService.listAllPage(page, size, status, keyword));
     }
 
     /**

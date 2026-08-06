@@ -45,6 +45,25 @@ public interface OrderMapper {
     List<OrderInfo> listAll();
 
     /**
+     * 分页查询全部订单（按时间倒序，支持按状态与关键词筛选）
+     */
+    @Select("<script>SELECT * FROM orders WHERE 1=1" +
+            "<if test='status != null and status != \"\"'> AND status = #{status}</if>" +
+            "<if test='keyword != null and keyword != \"\"'> AND (username LIKE CONCAT('%', #{keyword}, '%') OR CAST(id AS CHAR) LIKE CONCAT('%', #{keyword}, '%'))</if>" +
+            " ORDER BY created_at DESC LIMIT #{offset}, #{size}</script>")
+    List<OrderInfo> listAllPage(@Param("offset") int offset, @Param("size") int size,
+                                @Param("status") String status, @Param("keyword") String keyword);
+
+    /**
+     * 统计订单总数（支持按状态与关键词筛选）
+     */
+    @Select("<script>SELECT COUNT(*) FROM orders WHERE 1=1" +
+            "<if test='status != null and status != \"\"'> AND status = #{status}</if>" +
+            "<if test='keyword != null and keyword != \"\"'> AND (username LIKE CONCAT('%', #{keyword}, '%') OR CAST(id AS CHAR) LIKE CONCAT('%', #{keyword}, '%'))</if>" +
+            "</script>")
+    long countAll(@Param("status") String status, @Param("keyword") String keyword);
+
+    /**
      * 按订单 ID 查询订单项列表
      */
     @Select("SELECT * FROM order_item WHERE order_id = #{orderId}")

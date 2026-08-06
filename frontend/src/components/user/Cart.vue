@@ -91,9 +91,6 @@ const totalPrice = computed(() =>
   cartItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
 )
 
-/**
- * 图片地址规范化：绝对 URL 原样返回，其余补上前导 /
- */
 function normalizeImage(src: string): string {
   if (!src) return ''
   if (/^https?:/i.test(src)) return src
@@ -101,18 +98,12 @@ function normalizeImage(src: string): string {
   return '/' + src
 }
 
-/**
- * 价格格式化：保留两位小数
- */
 function formatPrice(n: number): string {
   const num = Number(n)
   if (Number.isNaN(num)) return String(n)
   return num.toFixed(2)
 }
 
-/**
- * 从后端加载当前用户购物车
- */
 async function loadCart() {
   try {
     const res = await get<CartItem[]>('/cart')

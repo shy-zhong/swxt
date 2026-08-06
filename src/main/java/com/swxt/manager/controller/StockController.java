@@ -81,4 +81,36 @@ public class StockController {
     public Result<List<StockRecord>> listByProduct(@PathVariable Long productId) {
         return Result.success(stockService.listByProductId(productId));
     }
+
+    /**
+     * 根据订单出库：扣减订单中各商品库存并写出库记录，订单状态置为已完成
+     */
+    @PostMapping("/order/{orderId}/out")
+    @PreAuthorize("hasRole('OPERATOR')")
+    public Result<Void> stockOutByOrder(@PathVariable Long orderId) {
+        String operator = SecurityUtil.getUsername();
+        boolean success = stockService.stockOutByOrder(orderId, operator);
+        if (success) {
+            logService.record(Core.ActionType.UPDATE, Core.TargetType.ORDER, orderId, Core.LogResult.SUCCESS);
+            return Result.success();
+        }
+        logService.record(Core.ActionType.UPDATE, Core.TargetType.ORDER, orderId, Core.LogResult.FAIL);
+        return Result.error(400, "订单出库失败");
+    }
+
+    /**
+     * 根据订单退货入库：退回订单中各商品库存并写入库记录，订单状态置为已取消
+     */
+    @PostMapping("/order/{orderId}/in")
+    @PreAuthorize("hasRole('OPERATOR')")
+    public Result<Void> stockInByOrder(@PathVariable Long orderId) {
+        String operator = SecurityUtil.getUsername();
+        boolean success = stockService.stockInByOrder(orderId, operator);
+        if (success) {
+            logService.record(Core.ActionType.UPDATE, Core.TargetType.ORDER, orderId, Core.LogResult.SUCCESS);
+            return Result.success();
+        }
+        logService.record(Core.ActionType.UPDATE, Core.TargetType.ORDER, orderId, Core.LogResult.FAIL);
+        return Result.error(400, "订单退货入库失败");
+    }
 }

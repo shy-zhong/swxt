@@ -26,7 +26,7 @@ defineEmits<{
 }>()
 
 const pageItems = computed<(number | string)[]>(() => {
-    const pages = Array.from(new Set([1, 2, props.page, props.totalPages - 1, props.totalPages]))
+    const pages = Array.from(new Set([1, props.page - 2 , props.page -1, props.page, props.page + 1, props.page + 2 , props.totalPages]))
         .filter(p => p >= 1 && p <= props.totalPages)
         .sort((a, b) => a - b)
     const items: (number | string)[] = []

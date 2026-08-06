@@ -9,6 +9,10 @@
           <span class="icon">📦</span>
           <span>出入库管理</span>
         </div>
+        <div class="menu-item" v-on:click="goTo('/operator/orders')">
+          <span class="icon">📋</span>
+          <span>订单管理</span>
+        </div>
         <div class="menu-item" v-on:click="goTo('/operator/stockLog')">
           <span class="icon">📦</span>
           <span>出入库记录</span>

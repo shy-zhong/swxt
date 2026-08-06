@@ -2,6 +2,7 @@ package com.swxt.manager.service;
 
 import com.swxt.manager.config.BusinessException;
 import com.swxt.manager.config.Core;
+import com.swxt.manager.dto.PageResult;
 import com.swxt.manager.dto.order.CreateOrderRequest;
 import com.swxt.manager.entity.OrderInfo;
 import com.swxt.manager.entity.OrderItem;
@@ -29,7 +30,7 @@ public class OrderService {
     private UserMapping userMapping;
 
     /**
-     * 创建订单：校验商品与库存，写入订单主表与订单项，扣减库存
+     * 创建订单：校验商品与库存，写入订单主表与订单项（不再自动扣减库存，由操作员在出入库管理中按订单出库）
      */
     @Transactional
     public OrderInfo createOrder(Long userId, String username, CreateOrderRequest request) {
@@ -50,11 +51,6 @@ public class OrderService {
             }
             if (product.getStock() < itemReq.getQuantity()) {
                 throw new BusinessException(Core.ResultCode.BAD_REQUEST, "库存不足: " + product.getName());
-            }
-
-            int rows = userMapping.updateStock(itemReq.getProductId(), -itemReq.getQuantity());
-            if (rows == 0) {
-                throw new BusinessException(Core.ResultCode.BAD_REQUEST, "库存扣减失败: " + product.getName());
             }
 
             OrderItem item = new OrderItem();
@@ -104,6 +100,25 @@ public class OrderService {
             order.setItems(orderMapper.listItemsByOrderId(order.getId()));
         }
         return orders;
+    }
+
+    /**
+     * 分页查询全部订单（含订单项，支持按状态与关键词筛选）
+     */
+    public PageResult<OrderInfo> listAllPage(int page, int size, String status, String keyword) {
+        if (page < 1) {
+            page = 1;
+        }
+        if (size < 1) {
+            size = 10;
+        }
+        int offset = (page - 1) * size;
+        List<OrderInfo> orders = orderMapper.listAllPage(offset, size, status, keyword);
+        for (OrderInfo order : orders) {
+            order.setItems(orderMapper.listItemsByOrderId(order.getId()));
+        }
+        long total = orderMapper.countAll(status, keyword);
+        return new PageResult<>(orders, total, page, size);
     }
 
     /**

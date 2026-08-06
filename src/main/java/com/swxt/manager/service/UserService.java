@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -74,7 +75,8 @@ public class UserService {
  * 注册新用户：校验系统配置（是否开放注册、密码长度），密码加密后入库
  */
     public User register(RegisterRequest request,boolean skipSystemConfig) {
-        if (!systemConfigService.getSystemConfigBoolean("allow_register") && !skipSystemConfig) {
+        if (!systemConfigService.getSystemConfigBoolean("allow_register")
+                && !skipSystemConfig) {
             throw new BusinessException(Core.ResultCode.REGISTER_CLOSED);
         }
         int minLen = systemConfigService.getSystemConfigInt("password_min_length");
@@ -135,6 +137,25 @@ public class UserService {
         return new PageResult<>(list, total, page, size);
     }
 
+    /**
+     * 用户分页查询，支持按关键词模糊搜索（用户名/真实姓名/手机号/邮箱）；关键词为空时回退到全量分页
+     */
+    public PageResult<User> listUsersPage(int page, int size, String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return listUsersPage(page, size);
+        }
+        if (page < 1) {
+            page = 1;
+        }
+        if (size < 1) {
+            size = 10;
+        }
+        int offset = (page - 1) * size;
+        List<User> list = userMapping.listUsersKeywordPage(keyword.trim(), offset, size);
+        long total = userMapping.countUsersKeyword(keyword.trim());
+        return new PageResult<>(list, total, page, size);
+    }
+
 /**
  * 商品分页查询，并对 page/size 做非法值兜底
  */
@@ -149,6 +170,42 @@ public class UserService {
         List<Product> list = userMapping.listProductsPage(offset, size);
         long total = userMapping.countProducts();
         return new PageResult<>(list, total, page, size);
+    }
+
+    /**
+     * 商品分页查询，支持组合筛选：keyword（名称模糊）、categoryId（精确）、priceMin/priceMax（价格区间）、status（状态）；
+     * 全部条件为空时回退到全量分页
+     */
+    public PageResult<Product> listProductsPage(int page, int size, String keyword, Long categoryId,
+                                                BigDecimal priceMin, BigDecimal priceMax, Integer status) {
+        if (page < 1) {
+            page = 1;
+        }
+        if (size < 1) {
+            size = 10;
+        }
+        int offset = (page - 1) * size;
+        boolean hasFilter = (keyword != null && !keyword.trim().isEmpty())
+                || categoryId != null || priceMin != null || priceMax != null || status != null;
+        List<Product> list;
+        long total;
+        if (hasFilter) {
+            list = userMapping.listProductsFilterPage(
+                    keyword == null ? null : keyword.trim(), categoryId, priceMin, priceMax, status, offset, size);
+            total = userMapping.countProductsFilter(
+                    keyword == null ? null : keyword.trim(), categoryId, priceMin, priceMax, status);
+        } else {
+            list = userMapping.listProductsPage(offset, size);
+            total = userMapping.countProducts();
+        }
+        return new PageResult<>(list, total, page, size);
+    }
+
+    /**
+     * 商品详情：按 ID 查询（含分类名称），不存在返回 null
+     */
+    public Product getProductDetail(Long id) {
+        return userMapping.getProductById(id);
     }
 
     public PageResult<Product> searchProductsByCondition(String value, int page, int size) {

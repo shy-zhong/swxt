@@ -4,6 +4,7 @@ import com.swxt.manager.entity.Product;
 import com.swxt.manager.entity.User;
 import org.apache.ibatis.annotations.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -27,13 +28,16 @@ public interface UserMapping {
     @Select("SELECT * FROM user WHERE deleted = 0 ORDER BY id ASC LIMIT #{offset}, #{size}")
     List<User> listUsersPage(@Param("offset") int offset, @Param("size") int size);
 
-    @Select("SELECT * FROM product ORDER BY id ASC LIMIT #{offset}, #{size}")
+    @Select("SELECT p.*, c.name AS category_name FROM product p " +
+            "LEFT JOIN category c ON p.category_id = c.id " +
+            "ORDER BY p.id ASC LIMIT #{offset}, #{size}")
     List<Product> listProductsPage(@Param("offset") int offset, @Param("size") int size);
 
-    @Select("SELECT * FROM product " +
-            "WHERE name LIKE CONCAT('%', #{value}, '%') " +
-            "OR description LIKE CONCAT('%', #{value}, '%') " +
-            "ORDER BY id ASC LIMIT #{offset}, #{size}")
+    @Select("SELECT p.*, c.name AS category_name FROM product p " +
+            "LEFT JOIN category c ON p.category_id = c.id " +
+            "WHERE p.name LIKE CONCAT('%', #{value}, '%') " +
+            "OR p.description LIKE CONCAT('%', #{value}, '%') " +
+            "ORDER BY p.id ASC LIMIT #{offset}, #{size}")
     List<Product> searchProductsPage(@Param("value") String value,
                                      @Param("offset") int offset,
                                      @Param("size") int size);
@@ -42,6 +46,44 @@ public interface UserMapping {
             "WHERE name LIKE CONCAT('%', #{value}, '%') " +
             "OR description LIKE CONCAT('%', #{value}, '%')")
     long countSearchProducts(@Param("value") String value);
+
+    /**
+     * 综合筛选商品：keyword（名称模糊）、categoryId（精确）、priceMin/priceMax（价格区间）、status（状态），动态拼接
+     */
+    @Select("<script>" +
+            "SELECT p.*, c.name AS category_name FROM product p " +
+            "LEFT JOIN category c ON p.category_id = c.id WHERE 1=1 " +
+            "<if test='keyword != null and keyword != \"\"'> AND p.name LIKE CONCAT('%', #{keyword}, '%') </if>" +
+            "<if test='categoryId != null'> AND p.category_id = #{categoryId} </if>" +
+            "<if test='priceMin != null'> AND p.price &gt;= #{priceMin} </if>" +
+            "<if test='priceMax != null'> AND p.price &lt;= #{priceMax} </if>" +
+            "<if test='status != null'> AND p.status = #{status} </if>" +
+            " ORDER BY p.id ASC LIMIT #{offset}, #{size}" +
+            "</script>")
+    List<Product> listProductsFilterPage(@Param("keyword") String keyword,
+                                         @Param("categoryId") Long categoryId,
+                                         @Param("priceMin") BigDecimal priceMin,
+                                         @Param("priceMax") BigDecimal priceMax,
+                                         @Param("status") Integer status,
+                                         @Param("offset") int offset,
+                                         @Param("size") int size);
+
+    /**
+     * 综合筛选商品总数（与 listProductsFilterPage 同条件）
+     */
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM product p WHERE 1=1 " +
+            "<if test='keyword != null and keyword != \"\"'> AND p.name LIKE CONCAT('%', #{keyword}, '%') </if>" +
+            "<if test='categoryId != null'> AND p.category_id = #{categoryId} </if>" +
+            "<if test='priceMin != null'> AND p.price &gt;= #{priceMin} </if>" +
+            "<if test='priceMax != null'> AND p.price &lt;= #{priceMax} </if>" +
+            "<if test='status != null'> AND p.status = #{status} </if>" +
+            "</script>")
+    long countProductsFilter(@Param("keyword") String keyword,
+                             @Param("categoryId") Long categoryId,
+                             @Param("priceMin") BigDecimal priceMin,
+                             @Param("priceMax") BigDecimal priceMax,
+                             @Param("status") Integer status);
 
 /**
  * 按指定字段模糊搜索用户（字段名动态拼接，值使用 LIKE 模糊匹配）
@@ -60,6 +102,26 @@ public interface UserMapping {
 
     @Select("SELECT COUNT(*) FROM user WHERE deleted = 0")
     long countUsers();
+
+    /**
+     * 按关键词模糊搜索用户（用户名/真实姓名/手机号/邮箱）
+     */
+    @Select("SELECT * FROM user WHERE deleted = 0 " +
+            "AND (username LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR real_name LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR phone LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR email LIKE CONCAT('%', #{keyword}, '%')) " +
+            "ORDER BY id ASC LIMIT #{offset}, #{size}")
+    List<User> listUsersKeywordPage(@Param("keyword") String keyword,
+                                    @Param("offset") int offset,
+                                    @Param("size") int size);
+
+    @Select("SELECT COUNT(*) FROM user WHERE deleted = 0 " +
+            "AND (username LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR real_name LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR phone LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR email LIKE CONCAT('%', #{keyword}, '%'))")
+    long countUsersKeyword(@Param("keyword") String keyword);
 
 /**
  * 统计商品总数
@@ -98,7 +160,8 @@ public interface UserMapping {
 /**
  * 按 ID 查询商品
  */
-    @Select("SELECT * FROM product WHERE id = #{id}")
+    @Select("SELECT p.*, c.name AS category_name FROM product p " +
+            "LEFT JOIN category c ON p.category_id = c.id WHERE p.id = #{id}")
     Product getProductById(@Param("id") Long id);
 
 

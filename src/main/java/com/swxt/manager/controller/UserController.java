@@ -18,6 +18,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 
 @RestController
 public class UserController {
@@ -64,7 +66,6 @@ public class UserController {
         try {
             user = userService.register(request,!skipSystemConfig.isEmpty());
         } catch (RuntimeException e) {
-            // 注册失败（注册关闭/密码过短/用户名重复等）记录 FAIL 日志后重新抛出，由全局异常处理器统一返回
             logService.record(Core.ActionType.REGISTER, Core.TargetType.USER, Core.LogResult.FAIL);
             throw e;
         }
@@ -78,14 +79,15 @@ public class UserController {
         return Result.success();
     }
     /**
-     * 用户分页列表
+     * 用户分页列表（支持 keyword 模糊搜索用户名/真实姓名/手机号/邮箱）
      */
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<PageResult<User>> listUsers(
             @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-        PageResult<User> result = userService.listUsersPage(page, size);
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        PageResult<User> result = userService.listUsersPage(page, size, keyword);
         return Result.success(result);
     }
 
@@ -104,15 +106,32 @@ public class UserController {
     }
 
     /**
-     * 商品分页列表
+     * 商品分页列表（支持综合筛选：keyword 名称模糊、categoryId 精确、priceMin/priceMax 价格区间、status 状态）
      */
     @GetMapping("/products")
     public Result<PageResult<Product>> listProducts(
             @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "priceMin", required = false) BigDecimal priceMin,
+            @RequestParam(value = "priceMax", required = false) BigDecimal priceMax,
+            @RequestParam(value = "status", required = false) Integer status
     ) {
-        PageResult<Product> result = userService.listProductsPage(page, size);
+        PageResult<Product> result = userService.listProductsPage(page, size, keyword, categoryId, priceMin, priceMax, status);
         return Result.success(result);
+    }
+
+    /**
+     * 商品详情：按 ID 查询（含分类名称），供用户端详情页与管理端查询使用
+     */
+    @GetMapping("/products/{id}")
+    public Result<Product> getProductDetail(@PathVariable Long id) {
+        Product product = userService.getProductDetail(id);
+        if (product == null) {
+            return Result.error(404, "商品不存在");
+        }
+        return Result.success(product);
     }
 
     @GetMapping("/products/search")

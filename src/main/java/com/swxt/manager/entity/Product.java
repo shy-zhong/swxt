@@ -19,6 +19,9 @@ public class Product {
     /** 所属分类 ID（关联 category.id） */
     private Long categoryId;
 
+    /** 分类名称（联表查询填充，非表字段） */
+    private String categoryName;
+
     /** 商品价格（精确到分的小数） */
     private java.math.BigDecimal price;
 

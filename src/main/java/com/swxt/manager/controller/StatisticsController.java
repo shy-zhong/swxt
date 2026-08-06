@@ -37,7 +37,7 @@ public class StatisticsController {
      * 库存流水分页查询
      */
     @GetMapping("/stock-records")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     public Result<PageResult<StatisticsVO.StockRecordItem>> stockRecords(
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
@@ -47,7 +47,7 @@ public class StatisticsController {
      * 库存流水条件查询
      */
     @GetMapping("/stock-records/search")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     public Result<PageResult<StatisticsVO.StockRecordItem>> searchStockRecords(
             @RequestParam(value = "value") String value,
             @RequestParam(value = "page", defaultValue = "1") int page,
