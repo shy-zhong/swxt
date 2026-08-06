@@ -42,6 +42,7 @@
           </div>
         </div>
         <div class="shop-card-actions">
+          <button class="action-btn" @click="showDetail(product)">查看详情</button>
           <button class="action-btn" @click="addToCart(product)">加入购物车</button>
           <button class="action-btn buy-now" @click="buyNow(product)">立即购买</button>
         </div>
@@ -49,13 +50,53 @@
     </div>
 
     <Pagination :page="currentPage" :total="allProducts.length" :totalPages="totalPages" @change="goToPage" />
+
+    <div v-if="detailVisible" class="panel-overlay" @click.self="closeDetail">
+      <div class="edit-panel">
+        <h3>商品详情</h3>
+        <div class="form-row form-row-image">
+          <label>商品图片</label>
+          <img v-if="detailProduct.image" class="form-image-preview" :src="normalizeImage(detailProduct.image)" alt="预览" />
+          <span v-else class="no-image">🖼️ 无图</span>
+        </div>
+        <div class="form-row">
+          <label>商品名</label>
+          <input :value="detailProduct.name" type="text" disabled />
+        </div>
+        <div class="form-row">
+          <label>分类ID</label>
+          <input :value="detailProduct.categoryId" type="number" disabled />
+        </div>
+        <div class="form-row">
+          <label>价格</label>
+          <input :value="currencySymbol + formatPrice(detailProduct.price)" type="text" disabled />
+        </div>
+        <div class="form-row">
+          <label>描述</label>
+          <input :value="detailProduct.description || '暂无描述'" type="text" disabled />
+        </div>
+        <div class="form-row">
+          <label>库存</label>
+          <input :value="detailProduct.stock" type="number" disabled />
+        </div>
+        <div class="form-row">
+          <label>状态</label>
+          <input :value="detailProduct.status === 1 ? '启用' : '禁用'" type="text" disabled />
+        </div>
+        <div class="form-actions">
+          <button class="action-btn" @click="addToCart(detailProduct)">加入购物车</button>
+          <button class="action-btn buy-now" @click="buyNow(detailProduct)">立即购买</button>
+          <button class="cancel-btn" @click="closeDetail">关闭</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 
 import { ref, onMounted, computed } from 'vue'
-import { get } from '../../utils/request'
+import { get, post } from '../../utils/request'
 import { getConfig } from '../../utils/configStore'
 import router from '../../route/Router'
 import Pagination from '../common/Pagination.vue'
@@ -70,14 +111,6 @@ interface Product {
   description: string
   stock: number
   status: number
-}
-
-interface CartItem {
-  id: number
-  name: string
-  price: number
-  image: string
-  quantity: number
 }
 
 interface PageResult<T> {
@@ -95,6 +128,9 @@ const loading = ref(false)
 const error = ref('')
 const cartCount = ref(0)
 
+const detailVisible = ref(false)
+const detailProduct = ref<Product>({ id: 0, name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 })
+
 const pageSize = 12
 const currentPage = ref(1)
 
@@ -107,9 +143,6 @@ const pagedProducts = computed(() => {
   return allProducts.value.slice(start, start + pageSize)
 })
 
-/**
- * 图片地址规范化：绝对 URL 原样返回，其余补上前导 /
- */
 function normalizeImage(src: string): string {
   if (!src) return ''
   if (/^https?:/i.test(src)) return src
@@ -118,7 +151,7 @@ function normalizeImage(src: string): string {
 }
 
 /**
- * 价格格式化：保留两位小数
+ * 保留两位小数
  */
 function formatPrice(n: number): string {
   const num = Number(n)
@@ -127,51 +160,59 @@ function formatPrice(n: number): string {
 }
 
 /**
- * 从 localStorage 读取购物车并更新右上角数量
+ * 读取购物车总件数（后端按登录用户统计）
  */
-function refreshCartCount() {
+async function refreshCartCount() {
   try {
-    const raw = localStorage.getItem('cart')
-    const cart: CartItem[] = raw ? JSON.parse(raw) : []
-    cartCount.value = cart.reduce((sum, item) => sum + item.quantity, 0)
+    const res = await get<number>('/cart/count')
+    cartCount.value = res.success && res.data ? res.data : 0
   } catch {
     cartCount.value = 0
   }
 }
 
 /**
- * 将商品加入购物车（已存在则数量 +1），同步 localStorage 并刷新数量
+ * 将商品加入购物车（调后端，已存在则数量累加），成功后刷新角标
  */
-function addToCart(product: Product) {
-  let cart: CartItem[] = []
+async function addToCart(product: Product) {
   try {
-    const raw = localStorage.getItem('cart')
-    cart = raw ? JSON.parse(raw) : []
-  } catch {
-    cart = []
+    const res = await post('/cart', { productId: product.id, quantity: 1 })
+    if (!res.success) {
+      error.value = res.message || '加入购物车失败'
+      return false
+    }
+    error.value = ''
+    await refreshCartCount()
+    return true
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '加入购物车失败'
+    return false
   }
-  const existing = cart.find(item => item.id === product.id)
-  if (existing) {
-    existing.quantity += 1
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: 1
-    })
-  }
-  localStorage.setItem('cart', JSON.stringify(cart))
-  refreshCartCount()
 }
 
 /**
  * 立即购买：加入购物车后跳转到购物车页
  */
-function buyNow(product: Product) {
-  addToCart(product)
-  router.push('/user/cart')
+async function buyNow(product: Product) {
+  const ok = await addToCart(product)
+  if (ok) {
+    router.push('/user/cart')
+  }
+}
+
+/**
+ * 打开商品详情面板
+ */
+function showDetail(product: Product) {
+  detailProduct.value = { ...product }
+  detailVisible.value = true
+}
+
+/**
+ * 关闭商品详情面板
+ */
+function closeDetail() {
+  detailVisible.value = false
 }
 
 /**

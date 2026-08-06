@@ -68,15 +68,17 @@
 
 import { ref, onMounted, computed } from 'vue'
 import { getConfig } from '../../utils/configStore'
-import { post } from '../../utils/request'
+import { get, post, put, del } from '../../utils/request'
 import router from '../../route/Router'
 
 interface CartItem {
   id: number
+  productId: number
   name: string
   price: number
   image: string
   quantity: number
+  stock: number
 }
 
 const cartItems = ref<CartItem[]>([])
@@ -109,66 +111,70 @@ function formatPrice(n: number): string {
 }
 
 /**
- * 从 localStorage 读取购物车数据
+ * 从后端加载当前用户购物车
  */
-function loadCart() {
+async function loadCart() {
   try {
-    const raw = localStorage.getItem('cart')
-    cartItems.value = raw ? JSON.parse(raw) : []
+    const res = await get<CartItem[]>('/cart')
+    cartItems.value = res.success && res.data ? res.data : []
   } catch {
     cartItems.value = []
   }
 }
 
 /**
- * 同步购物车到 localStorage
+ * 数量 +1（调后端）
  */
-function saveCart() {
-  localStorage.setItem('cart', JSON.stringify(cartItems.value))
-}
-
-/**
- * 数量 +1
- */
-function increaseQty(id: number) {
+async function increaseQty(id: number) {
   const item = cartItems.value.find(i => i.id === id)
-  if (item) {
+  if (!item) return
+  const res = await put('/cart', { id, quantity: item.quantity + 1 })
+  if (res.success) {
     item.quantity += 1
-    saveCart()
+  } else {
+    error.value = res.message || '操作失败'
   }
 }
 
 /**
- * 数量 -1，最小为 1（数量为 1 时再减则移除该商品）
+ * 数量 -1；数量为 1 时再减则删除该行（调后端）
  */
-function decreaseQty(id: number) {
+async function decreaseQty(id: number) {
   const item = cartItems.value.find(i => i.id === id)
   if (!item) return
   if (item.quantity > 1) {
-    item.quantity -= 1
+    const res = await put('/cart', { id, quantity: item.quantity - 1 })
+    if (res.success) {
+      item.quantity -= 1
+    } else {
+      error.value = res.message || '操作失败'
+    }
   } else {
-    cartItems.value = cartItems.value.filter(i => i.id !== id)
+    await removeItem(id)
   }
-  saveCart()
 }
 
 /**
- * 从购物车移除指定商品
+ * 从购物车移除指定行（调后端）
  */
-function removeItem(id: number) {
+async function removeItem(id: number) {
   if (!confirm('确定从购物车移除该商品吗？')) return
-  cartItems.value = cartItems.value.filter(i => i.id !== id)
-  saveCart()
+  const res = await del(`/cart/${id}`)
+  if (res.success) {
+    cartItems.value = cartItems.value.filter(i => i.id !== id)
+  } else {
+    error.value = res.message || '移除失败'
+  }
 }
 
 /**
- * 一键购买：调用后端 POST /orders 下单（扣减库存），成功后清空购物车
+ * 一键购买：调用后端 POST /orders 下单（后端扣库存并清空购物车），成功后清空本地列表
  */
 async function checkout() {
   if (cartItems.value.length === 0) return
   if (!confirm('确认购买购物车中的全部商品吗？')) return
 
-  const items = cartItems.value.map((i) => ({ productId: i.id, quantity: i.quantity }))
+  const items = cartItems.value.map((i) => ({ productId: i.productId, quantity: i.quantity }))
   try {
     const res = await post<{ id: number }>('/orders', { items, remark: '购物车结算' })
     if (!res.success) {
@@ -176,7 +182,6 @@ async function checkout() {
       return
     }
     cartItems.value = []
-    localStorage.removeItem('cart')
     error.value = ''
     successTip.value = '购买成功'
     setTimeout(() => {
