@@ -15,15 +15,12 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    /**
-     * 构造安全配置：注入 JWT 认证过滤器
-     */
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     /**
-     * 配置安全过滤链：关闭 CSRF、放行登录/注册/公共配置，其余请求需认证，JWT 过滤器前置
+     * 配置安全过滤链
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

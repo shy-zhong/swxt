@@ -58,7 +58,7 @@ public class CartService {
     }
 
     /**
-     * 修改购物车行数量（限本人）；数量不大于 0 视为移除该项
+     * 修改购物车行数量
      */
     public boolean updateQuantity(Long userId, Long id, Integer quantity) {
         if (id == null) {

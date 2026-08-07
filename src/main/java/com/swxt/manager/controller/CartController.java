@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 购物车控制器：查询/加入/改量/删除/清空（登录用户可用，数据按当前登录用户隔离）
+ * 购物车
  */
 @RestController
 @RequestMapping("/cart")
@@ -41,7 +41,7 @@ public class CartController {
     }
 
     /**
-     * 加入购物车：productId 必填，quantity 缺省 1，已存在则累加
+     * 加入购物车
      */
     @PostMapping
     public Result<Void> add(@RequestBody CartItem cartItem) {
@@ -50,7 +50,7 @@ public class CartController {
     }
 
     /**
-     * 修改数量：id 为购物车行 ID；quantity 不大于 0 时移除该项
+     * 修改数量
      */
     @PutMapping
     public Result<Void> update(@RequestBody CartItem cartItem) {

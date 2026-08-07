@@ -1,6 +1,8 @@
 package com.swxt.manager.config;
 
 
+import lombok.Getter;
+@Getter
 public class BusinessException extends RuntimeException {
 
     
@@ -14,9 +16,5 @@ public class BusinessException extends RuntimeException {
     public BusinessException(Core.ResultCode resultCode, String customMessage) {
         super(customMessage);
         this.resultCode = resultCode;
-    }
-
-    public Core.ResultCode getResultCode() {
-        return resultCode;
     }
 }

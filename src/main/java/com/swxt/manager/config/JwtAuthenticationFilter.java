@@ -20,17 +20,14 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-
 /**
  * 构造过滤器：注入 JWT 工具类
  */
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
-
 /**
- * 解析请求头 Authorization 中的 Bearer Token，校验通过后注入 Spring Security 认证上下文
- * principal=用户名；details=userId（供日志服务取用）
+ * 解析请求头 Authorization中的Token，校验通过后注入 Spring Security 认证上下文
  */
     @Override
     protected void doFilterInternal(HttpServletRequest request,

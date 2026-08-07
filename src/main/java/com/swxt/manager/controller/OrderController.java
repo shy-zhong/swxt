@@ -57,7 +57,7 @@ public class OrderController {
     }
 
     /**
-     * 查询全部订单（分页，支持按状态与关键词筛选）
+     * 查询全部订单
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")

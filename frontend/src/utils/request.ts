@@ -1,8 +1,4 @@
-
-
-
 const BASE_URL = '/api'
-
 
 class AuthError extends Error {
   constructor(message: string) {
@@ -10,7 +6,6 @@ class AuthError extends Error {
     this.name = 'AuthError'
   }
 }
-
 
 export interface ApiResult<T = any> {
   code: number
