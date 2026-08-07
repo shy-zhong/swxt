@@ -31,6 +31,7 @@
 - 写操作确认规则:任何文件写入/编辑(edit_file、multi_edit、write_file、delete_range、move_file 等)若单次改动新增+删除合计超过 25 行,必须先向用户询问确认;合计 ≤10 行可直接执行,无需询问
 - reasonix.toml 修改规则:任何对 reasonix.toml(沙箱/工作区配置)的修改,无论改动行数多少,都必须先向用户询问确认
 - 每次修改前自动提交git
+- 每次修改后不提交git
 
 ## Notes
 

@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
     }
 
 /**
- * 处理权限拒绝：返回 403（项目业务码 FORBIDDEN），替代此前被 RuntimeException 兜底成 500 的问题
+ * 处理权限拒绝：返回 403
  */
     @ExceptionHandler(AccessDeniedException.class)
     public Result<Void> handleAccessDenied(AccessDeniedException e) {
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
     }
 
 /**
- * 处理请求方法不支持（路径存在但方法不匹配，如 GET /products/{id} 仅有 DELETE）：返回 405
+ * 处理请求方法不支持
  */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public Result<Void> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
     }
 
 /**
- * 处理未匹配路径（如 GET /products/{id} 不存在）：返回 404，替代此前被 Exception 兜底成 500 的问题
+ * 处理未匹配路径
  */
     @ExceptionHandler(NoResourceFoundException.class)
     public Result<Void> handleNoResourceFound(NoResourceFoundException e) {
@@ -78,7 +78,7 @@ public class GlobalExceptionHandler {
     }
 
 /**
- * 运行时异常兜底：返回 500 并附带异常信息
+ * 运行时异常
  */
     @ExceptionHandler(RuntimeException.class)
     public Result<Void> handleRuntime(RuntimeException e) {
@@ -87,7 +87,7 @@ public class GlobalExceptionHandler {
     }
 
 /**
- * 未知异常兜底：统一提示，不暴露内部细节
+ * 未知异常兜底
  */
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
