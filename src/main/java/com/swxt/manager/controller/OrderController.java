@@ -1,13 +1,11 @@
 package com.swxt.manager.controller;
 
-import com.swxt.manager.config.Core;
 import com.swxt.manager.dto.PageResult;
 import com.swxt.manager.dto.Result;
 import com.swxt.manager.dto.order.CreateOrderRequest;
 import com.swxt.manager.entity.OrderInfo;
 import com.swxt.manager.service.CartService;
 import com.swxt.manager.service.OrderService;
-import com.swxt.manager.service.SystemLogService;
 import com.swxt.manager.Utils.SecurityUtil;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,12 +18,10 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
-    private final SystemLogService logService;
     private final CartService cartService;
 
-    public OrderController(OrderService orderService, SystemLogService logService, CartService cartService) {
+    public OrderController(OrderService orderService, CartService cartService) {
         this.orderService = orderService;
-        this.logService = logService;
         this.cartService = cartService;
     }
 
@@ -38,7 +34,6 @@ public class OrderController {
         Long userId = SecurityUtil.getUserId();
         String username = SecurityUtil.getUsername();
         OrderInfo order = orderService.createOrder(userId, username, request);
-        logService.record(Core.ActionType.CREATE, Core.TargetType.ORDER, order.getId(), Core.LogResult.SUCCESS);
         // 下单成功后清空该用户购物车
         cartService.clear(userId);
         return Result.success(order);
@@ -92,10 +87,8 @@ public class OrderController {
     public Result<Void> updateStatus(@PathVariable Long id, @RequestParam String status) {
         boolean updated = orderService.updateStatus(id, status);
         if (updated) {
-            logService.record(Core.ActionType.UPDATE, Core.TargetType.ORDER, id, Core.LogResult.SUCCESS);
             return Result.success();
         }
-        logService.record(Core.ActionType.UPDATE, Core.TargetType.ORDER, id, Core.LogResult.FAIL);
         return Result.error(404, "订单不存在");
     }
 }
