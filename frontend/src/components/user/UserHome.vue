@@ -13,6 +13,10 @@
           <span class="icon">🛒</span>
           <span>我的购物车</span>
         </div>
+        <div class="menu-item" @click="goTo('/user/myOrders')">
+          <span class="icon">📦</span>
+          <span>我的订单</span>
+        </div>
         <div class="menu-item">
           <span class="icon">👤</span>
           <span>个人信息</span>
