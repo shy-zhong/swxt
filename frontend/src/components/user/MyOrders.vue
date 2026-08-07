@@ -8,11 +8,19 @@
 
     <div v-if="error" class="error">{{ error }}</div>
 
-    <div v-if="loading" class="empty-tip">加载中...</div>
+    <SearchToolbar v-model="searchKeyword" placeholder="搜索订单号..." @search="handleSearch">
+      <template #actions>
+        <select v-model="statusFilter" class="search-select" @change="handleFilter">
+          <option value="">全部状态</option>
+          <option value="PENDING">待出库</option>
+          <option value="COMPLETED">已出库</option>
+          <option value="CANCELLED">已退货</option>
+        </select>
+        <button class="toolbar-btn" @click="loadOrders">刷新</button>
+      </template>
+    </SearchToolbar>
 
-    <div v-else-if="orders.length === 0" class="empty-tip">暂无订单</div>
-
-    <table v-else class="product-table">
+    <table class="product-table">
       <thead>
         <tr>
           <th>订单号</th>
@@ -34,8 +42,13 @@
             <button class="action-btn" @click="showDetail(order)">查看详情</button>
           </td>
         </tr>
+        <tr v-if="orders.length === 0">
+          <td colspan="6" style="text-align:center;">暂无订单数据</td>
+        </tr>
       </tbody>
     </table>
+
+    <Pagination :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
 
     <div v-if="detailVisible" class="panel-overlay" @click.self="closeDetail">
       <div class="edit-panel">
@@ -83,6 +96,8 @@ import { ref, computed, onMounted } from 'vue'
 import { get } from '../../utils/request'
 import { getConfig } from '../../utils/configStore'
 import router from '../../route/Router'
+import SearchToolbar from '../common/SearchToolbar.vue'
+import Pagination from '../common/Pagination.vue'
 
 interface OrderItem {
   id: number
@@ -100,9 +115,23 @@ interface OrderInfo {
   items: OrderItem[]
 }
 
+interface PageResult<T> {
+  list: T[]
+  total: number
+  page: number
+  size: number
+  totalPages: number
+}
+
 const orders = ref<OrderInfo[]>([])
-const loading = ref(false)
 const error = ref('')
+const searchKeyword = ref('')
+const statusFilter = ref('')
+
+const page = ref(1)
+const size = ref(parseInt(getConfig('page_size')) || 10)
+const total = ref(0)
+const totalPages = ref(0)
 
 const detailVisible = ref(false)
 const detailOrder = ref<OrderInfo | null>(null)
@@ -134,23 +163,53 @@ function formatTime(time: string | undefined): string {
 }
 
 /**
- * 加载当前用户的全部订单（含订单项）
+ * 构建分页查询 URL（拼接 status 与 keyword 参数）
+ */
+function buildQueryUrl(): string {
+  const params = [`page=${page.value}`, `size=${size.value}`]
+  if (statusFilter.value) {
+    params.push(`status=${encodeURIComponent(statusFilter.value)}`)
+  }
+  if (searchKeyword.value.trim()) {
+    params.push(`keyword=${encodeURIComponent(searchKeyword.value.trim())}`)
+  }
+  return `/orders/my?${params.join('&')}`
+}
+
+/**
+ * 加载当前用户的订单（分页，支持按状态与关键词筛选）
  */
 async function loadOrders() {
-  loading.value = true
   error.value = ''
   try {
-    const res = await get<OrderInfo[]>('/orders/my')
+    const res = await get<PageResult<OrderInfo>>(buildQueryUrl())
     if (res.success && res.data) {
-      orders.value = res.data
+      orders.value = res.data.list
+      total.value = res.data.total
+      totalPages.value = res.data.totalPages
+      page.value = res.data.page
     } else {
       error.value = res.message || '加载订单失败'
     }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '网络错误'
-  } finally {
-    loading.value = false
   }
+}
+
+function handleSearch() {
+  page.value = 1
+  loadOrders()
+}
+
+function handleFilter() {
+  page.value = 1
+  loadOrders()
+}
+
+function goToPage(target: number) {
+  if (target < 1 || (totalPages.value > 0 && target > totalPages.value)) return
+  page.value = target
+  loadOrders()
 }
 
 function showDetail(order: OrderInfo) {

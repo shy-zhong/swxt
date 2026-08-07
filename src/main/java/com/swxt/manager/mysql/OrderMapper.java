@@ -39,6 +39,27 @@ public interface OrderMapper {
     List<OrderInfo> listByUserId(@Param("userId") Long userId);
 
     /**
+     * 按用户 ID 分页查询订单（支持按状态与关键词筛选）
+     */
+    @Select("<script>SELECT * FROM orders WHERE user_id = #{userId}" +
+            "<if test='status != null and status != \"\"'> AND status = #{status}</if>" +
+            "<if test='keyword != null and keyword != \"\"'> AND CAST(id AS CHAR) LIKE CONCAT('%', #{keyword}, '%')</if>" +
+            " ORDER BY created_at DESC LIMIT #{offset}, #{size}</script>")
+    List<OrderInfo> listByUserIdPage(@Param("userId") Long userId, @Param("offset") int offset,
+                                     @Param("size") int size, @Param("status") String status,
+                                     @Param("keyword") String keyword);
+
+    /**
+     * 统计用户订单总数（支持按状态与关键词筛选）
+     */
+    @Select("<script>SELECT COUNT(*) FROM orders WHERE user_id = #{userId}" +
+            "<if test='status != null and status != \"\"'> AND status = #{status}</if>" +
+            "<if test='keyword != null and keyword != \"\"'> AND CAST(id AS CHAR) LIKE CONCAT('%', #{keyword}, '%')</if>" +
+            "</script>")
+    long countByUserId(@Param("userId") Long userId, @Param("status") String status,
+                       @Param("keyword") String keyword);
+
+    /**
      * 查询全部订单（按时间倒序）
      */
     @Select("SELECT * FROM orders ORDER BY created_at DESC")

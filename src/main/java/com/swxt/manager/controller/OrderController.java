@@ -12,8 +12,6 @@ import com.swxt.manager.Utils.SecurityUtil;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
  * 订单控制器：用户下单/查看自己的订单，操作员与管理员查看/处理所有订单
  */
@@ -47,13 +45,17 @@ public class OrderController {
     }
 
     /**
-     * 查询当前用户的订单
+     * 查询当前用户的订单（分页，支持按状态与关键词筛选）
      */
     @GetMapping("/my")
     @PreAuthorize("hasAnyRole('USER','OPERATOR')")
-    public Result<List<OrderInfo>> myOrders() {
+    public Result<PageResult<OrderInfo>> myOrders(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "keyword", required = false) String keyword) {
         Long userId = SecurityUtil.getUserId();
-        return Result.success(orderService.listByUserId(userId));
+        return Result.success(orderService.listByUserIdPage(userId, page, size, status, keyword));
     }
 
     /**

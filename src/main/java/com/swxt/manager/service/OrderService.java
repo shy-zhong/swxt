@@ -92,6 +92,25 @@ public class OrderService {
     }
 
     /**
+     * 按用户 ID 分页查询订单（含订单项，支持按状态与关键词筛选）
+     */
+    public PageResult<OrderInfo> listByUserIdPage(Long userId, int page, int size, String status, String keyword) {
+        if (page < 1) {
+            page = 1;
+        }
+        if (size < 1) {
+            size = 10;
+        }
+        int offset = (page - 1) * size;
+        List<OrderInfo> orders = orderMapper.listByUserIdPage(userId, offset, size, status, keyword);
+        for (OrderInfo order : orders) {
+            order.setItems(orderMapper.listItemsByOrderId(order.getId()));
+        }
+        long total = orderMapper.countByUserId(userId, status, keyword);
+        return new PageResult<>(orders, total, page, size);
+    }
+
+    /**
      * 查询全部订单（含订单项）
      */
     public List<OrderInfo> listAll() {
