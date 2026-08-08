@@ -13,6 +13,10 @@
           <span class="icon">📦</span>
           <span>商品管理</span>
         </div>
+        <div class="menu-item" v-on:click="goTo('/admin/orders')">
+          <span class="icon">📋</span>
+          <span>订单查看</span>
+        </div>
         <div class="menu-item" v-on:click="goTo('/admin/statistics')">
           <span class="icon">📊</span>
           <span>数据统计</span>
