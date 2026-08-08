@@ -117,41 +117,36 @@ const groups = ref<SettingsGroup[]>([
 const activeGroup = ref<string>(groups.value[0].title)
 const error = ref('')
 const successMsg = ref('')
+/** 待上传的图片文件：key 为配置项 id，保存时才上传，避免放弃修改产生孤儿文件 */
+const pendingFiles: Record<number, File> = {}
 
 /**
  * 图片路径规范化：非http开头则加斜杠
  */
 function normalizeImage(src: string): string {
     if (!src) return ''
-    if (/^https?:/i.test(src)) return src
+    if (/^https?:/i.test(src) || /^blob:/i.test(src)) return src
     if (/^\//.test(src)) return src
     return '/' + src
 }
 
 /**
- * 图片上传处理：FormData 发送到 /upload，成功后写回 configValue
+ * 图片选择处理：仅生成本地预览，待保存时才上传到后端
  */
-async function handleImageUpload(e: Event, item: SystemConfig) {
+function handleImageUpload(e: Event, item: SystemConfig) {
     const input = e.target as HTMLInputElement
     const file = input.files?.[0]
     if (!file) return
 
     error.value = ''
     successMsg.value = ''
-    try {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('type', 'config')
-        const res = await upload<string>('/upload', formData)
-        if (res.success && res.data) {
-            item.configValue = res.data
-            successMsg.value = `${item.configKey} 图片上传成功，请保存设置`
-        } else {
-            error.value = res.message || '图片上传失败'
-        }
-    } catch (err) {
-        error.value = err instanceof Error ? err.message : '网络错误'
+    // 释放上一张未保存的本地预览
+    if (pendingFiles[item.id] && /^blob:/i.test(item.configValue)) {
+        URL.revokeObjectURL(item.configValue)
     }
+    pendingFiles[item.id] = file
+    item.configValue = URL.createObjectURL(file)
+    successMsg.value = `${item.configKey} 已选择图片，请点击「保存本组设置」上传`
     input.value = ''
 }
 
@@ -178,11 +173,32 @@ onMounted(async () => {
 })
 
 /**
- * 保存某一组的全部配置项到后端（仅可编辑模式可用）
+ * 保存某一组配置：先上传本组待传图片，再提交配置到后端
  */
 async function saveGroup(group: SettingsGroup) {
     error.value = ''
     successMsg.value = ''
+    // 第一步：上传本组中已选择但未上传的图片，拿到真实 URL 回填
+    for (const item of group.items) {
+        if (!pendingFiles[item.id]) continue
+        try {
+            const formData = new FormData()
+            formData.append('file', pendingFiles[item.id])
+            formData.append('type', 'config')
+            const res = await upload<string>('/upload', formData)
+            if (!res.success || !res.data) {
+                error.value = `${item.configKey} 图片上传失败：${res.message || '未知错误'}`
+                return
+            }
+            URL.revokeObjectURL(item.configValue)
+            item.configValue = res.data
+            delete pendingFiles[item.id]
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : '网络错误'
+            return
+        }
+    }
+    // 第二步：提交本组配置
     try {
         const res = await put<string[]>('/system-config', group.items)
         if (res.success) {
