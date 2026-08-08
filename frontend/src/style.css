@@ -792,6 +792,22 @@ button:hover {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.category-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.category-grid::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.category-grid::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .category-card {
