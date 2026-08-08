@@ -9,9 +9,9 @@
     <div v-if="error" class="error">{{ error }}</div>
     <div v-if="successMsg" class="success-tip">{{ successMsg }}</div>
 
-    <div class="tab-bar">
-      <button :class="['tab-btn', { active: activeTab === 'product' }]" @click="switchTab('product')">商品出入库</button>
-      <button :class="['tab-btn', { active: activeTab === 'order' }]" @click="switchTab('order')">订单出入库</button>
+    <div class="tab-bar tab-bar-square">
+      <button :class="['tab-btn-square', { active: activeTab === 'product' }]" @click="switchTab('product')">商品出入库</button>
+      <button :class="['tab-btn-square', { active: activeTab === 'order' }]" @click="switchTab('order')">订单出入库</button>
     </div>
 
     <div v-if="activeTab === 'product'">

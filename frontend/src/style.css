@@ -1798,7 +1798,6 @@ button:hover {
   padding: 8px 20px;
   font-size: 14px;
   border: 1px solid var(--color-border);
-  border-bottom: none;
   background: none;
   cursor: pointer;
   color: var(--color-text-tertiary);
