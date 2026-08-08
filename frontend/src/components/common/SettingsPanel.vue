@@ -141,6 +141,7 @@ async function handleImageUpload(e: Event, item: SystemConfig) {
     try {
         const formData = new FormData()
         formData.append('file', file)
+        formData.append('type', 'config')
         const res = await upload<string>('/upload', formData)
         if (res.success && res.data) {
             item.configValue = res.data

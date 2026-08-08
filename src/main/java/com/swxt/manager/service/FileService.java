@@ -31,6 +31,13 @@ public class FileService {
      * 保存上传文件：UUID 重命名，写入 uploadDir/product/，返回相对 URL 路径
      */
     public String store(MultipartFile file) {
+        return store(file, "product");
+    }
+
+    /**
+     * 保存上传文件到指定子目录：UUID 重命名，返回相对 URL 路径
+     */
+    public String store(MultipartFile file, String subdir) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(Core.ResultCode.BAD_REQUEST);
         }
@@ -42,17 +49,17 @@ public class FileService {
         }
 
         String fileName = UUID.randomUUID() + "." + ext;
-        Path productDir = Paths.get(uploadDir, "product");
+        Path targetDir = Paths.get(uploadDir, subdir);
         try {
-            Files.createDirectories(productDir);
-            Path target = productDir.resolve(fileName);
+            Files.createDirectories(targetDir);
+            Path target = targetDir.resolve(fileName);
             file.transferTo(target.toFile());
         } catch (IOException e) {
             log.error("文件保存失败", e);
             throw new BusinessException(Core.ResultCode.SERVER_ERROR);
         }
 
-        return "/uploads/product/" + fileName;
+        return "/uploads/" + subdir + "/" + fileName;
     }
 
     /**

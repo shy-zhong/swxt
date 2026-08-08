@@ -26,11 +26,13 @@ public class FileController {
 
     /**
      * 上传图片：UUID 重命名后保存本地，返回可访问的 URL 路径
+     * @param type 文件类型（product/config），默认 product
      */
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<String> upload(@RequestParam("file") MultipartFile file) {
-        String url = fileService.store(file);
+    public Result<String> upload(@RequestParam("file") MultipartFile file,
+                                 @RequestParam(value = "type", defaultValue = "product") String type) {
+        String url = fileService.store(file, type);
         logService.record(Core.ActionType.CREATE, Core.TargetType.PRODUCT, null, Core.LogResult.SUCCESS);
         return Result.success(url);
     }
