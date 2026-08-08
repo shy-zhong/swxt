@@ -11,7 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 订单控制器：用户下单/查看自己的订单，操作员与管理员查看/处理所有订单
+ * 订单控制器
  */
 @RestController
 @RequestMapping("/orders")
