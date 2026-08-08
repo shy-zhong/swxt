@@ -25,14 +25,28 @@
                         <div class="settings-desc">{{ item.description }}</div>
                     </div>
                     <div class="settings-control">
-                        <input v-if="item.type === 'text' || item.type === 'number'" :type="item.type"
-                            v-model="item.configValue" class="settings-input" :disabled="readonly" />
-                        <label v-else-if="item.type === 'switch'" class="switch">
-                            <input type="checkbox" v-model="item.configValue" true-value="true" false-value="false"
+                        <template v-if="item.type === 'text' || item.type === 'number'">
+                            <input :type="item.type" v-model="item.configValue" class="settings-input"
                                 :disabled="readonly" />
-                            <span class="switch-slider"></span>
-                            <span class="switch-text">{{ item.configValue === 'true' ? '已启用' : '已禁用' }}</span>
-                        </label>
+                        </template>
+                        <template v-else-if="item.type === 'switch'">
+                            <label class="switch">
+                                <input type="checkbox" v-model="item.configValue" true-value="true"
+                                    false-value="false" :disabled="readonly" />
+                                <span class="switch-slider"></span>
+                                <span class="switch-text">{{ item.configValue === 'true' ? '已启用' : '已禁用' }}</span>
+                            </label>
+                        </template>
+                        <template v-else-if="item.type === 'image'">
+                            <div class="settings-image-upload">
+                                <input type="file" accept="image/png,image/jpeg,image/gif,image/webp"
+                                    @change="(e) => handleImageUpload(e, item)" :disabled="readonly" />
+                                <div v-if="item.configValue" class="settings-image-preview">
+                                    <img :src="normalizeImage(item.configValue)" alt="预览" />
+                                </div>
+                                <div v-else class="settings-image-placeholder">暂无图片</div>
+                            </div>
+                        </template>
                     </div>
                 </div>
                 <div v-if="group.items.length === 0" class="settings-row">
@@ -50,7 +64,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { get, put } from '../../utils/request'
+import { get, put, upload } from '../../utils/request'
 import router from '../../route/Router'
 import { loadConfig } from '../../utils/configStore'
 
@@ -59,7 +73,7 @@ interface SystemConfig {
     configKey: string
     configValue: string
     description: string
-    type: 'text' | 'number' | 'switch'
+    type: 'text' | 'number' | 'switch' | 'image'
 }
 
 interface SettingsGroup {
@@ -76,13 +90,13 @@ const props = withDefaults(defineProps<{
     readonly: false
 })
 
-const CATEGORY_MAP: Record<string, { title: string; type: 'text' | 'number' | 'switch' }> = {
+const CATEGORY_MAP: Record<string, { title: string; type: 'text' | 'number' | 'switch' | 'image' }> = {
     site_name: { title: '站点信息', type: 'text' },
     site_description: { title: '站点信息', type: 'text' },
     contact_phone: { title: '站点信息', type: 'text' },
     contact_email: { title: '站点信息', type: 'text' },
     currency_symbol: { title: '站点信息', type: 'text' },
-    homepage_background: { title: '站点信息', type: 'text' },
+    homepage_background: { title: '站点信息', type: 'image' },
     page_size: { title: '站点信息', type: 'number' },
     allow_register: { title: '安全设置', type: 'switch' },
     default_user_role: { title: '安全设置', type: 'text' },
@@ -103,6 +117,42 @@ const groups = ref<SettingsGroup[]>([
 const activeGroup = ref<string>(groups.value[0].title)
 const error = ref('')
 const successMsg = ref('')
+
+/**
+ * 图片路径规范化：非http开头则加斜杠
+ */
+function normalizeImage(src: string): string {
+    if (!src) return ''
+    if (/^https?:/i.test(src)) return src
+    if (/^\//.test(src)) return src
+    return '/' + src
+}
+
+/**
+ * 图片上传处理：FormData 发送到 /upload，成功后写回 configValue
+ */
+async function handleImageUpload(e: Event, item: SystemConfig) {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    error.value = ''
+    successMsg.value = ''
+    try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await upload<string>('/upload', formData)
+        if (res.success && res.data) {
+            item.configValue = res.data
+            successMsg.value = `${item.configKey} 图片上传成功，请保存设置`
+        } else {
+            error.value = res.message || '图片上传失败'
+        }
+    } catch (err) {
+        error.value = err instanceof Error ? err.message : '网络错误'
+    }
+    input.value = ''
+}
 
 onMounted(async () => {
     error.value = ''
