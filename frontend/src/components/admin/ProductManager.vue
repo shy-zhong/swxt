@@ -6,8 +6,13 @@
             <button class="back-btn" @click="router.push('/admin/home')">返回</button>
         </div>
 
+        <div class="tab-bar tab-bar-square">
+            <button :class="['tab-btn-square', { active: activeTab === 'product' }]" @click="activeTab = 'product'">商品管理</button>
+            <button :class="['tab-btn-square', { active: activeTab === 'category' }]" @click="activeTab = 'category'">分类管理</button>
+        </div>
+
         <div v-if="error" class="error">{{ error }}</div>
-        <div v-if="isCreating" class="edit-panel">
+        <div v-if="activeTab === 'product' && isCreating" class="edit-panel">
             <h3>新增商品</h3>
             <div class="form-row form-row-image">
                 <label>商品图片</label>
@@ -91,24 +96,17 @@
             </div>
         </div>
 
-        <template v-else-if="showCategoryPanel">
-            <div class="toolbar">
-                <div></div>
-                <div class="toolbar-actions">
-                    <button class="toolbar-btn" @click="showCategoryPanel = false">返回商品管理</button>
-                </div>
-            </div>
-            <component :is="CategoryManager" @close="showCategoryPanel = false" />
+        <template v-if="activeTab === 'category'">
+            <component :is="CategoryManager" @close="activeTab = 'product'" />
         </template>
 
-        <SearchToolbar v-else v-model="searchKeyword" placeholder="搜索商品名..." @search="handleSearch">
+        <SearchToolbar v-if="activeTab === 'product' && !isCreating && !showing" v-model="searchKeyword" placeholder="搜索商品名..." @search="handleSearch">
             <template #actions>
                 <button class="toolbar-btn" @click="openCreate">新增商品</button>
-                <button class="toolbar-btn" @click="showCategoryPanel = true">分类管理</button>
             </template>
         </SearchToolbar>
 
-        <div class="filter-bar" v-if="!isCreating && !showing && !showCategoryPanel">
+        <div class="filter-bar" v-if="activeTab === 'product' && !isCreating && !showing">
             <div class="filter-item">
                 <label>分类</label>
                 <select v-model="filterCategoryId">
@@ -136,7 +134,7 @@
             </div>
         </div>
 
-        <div class="table-wrap" v-if="!isCreating && !showing && !showCategoryPanel">
+        <div class="table-wrap" v-if="activeTab === 'product' && !isCreating && !showing">
             <table class="product-table">
                 <thead>
                     <tr>
@@ -174,7 +172,7 @@
             </table>
         </div>
 
-        <Pagination v-if="!isCreating && !showing && !showCategoryPanel" :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
+        <Pagination v-if="activeTab === 'product' && !isCreating && !showing" :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
 
 
         <div v-if="stockAlertVisible" class="stock-alert-overlay" @click.self="stockAlertVisible = false">
@@ -242,7 +240,7 @@ const editForm = ref<Product>({
 const showing = ref(false)
 const editing = ref(false)
 const isCreating = ref<boolean>(false)
-const showCategoryPanel = ref(false)
+const activeTab = ref<'product' | 'category'>('product')
 
 const createForm = ref<{ name: string; categoryId: number; price: number; image: string; description: string; stock: number; status: number }>({
     name: '',

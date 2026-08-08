@@ -1788,6 +1788,30 @@ button:hover {
   font-weight: 600;
 }
 
+/* ===== ProductManager: 方形边框 tab ===== */
+.tab-bar-square {
+  border-bottom: none;
+  gap: 4px;
+}
+
+.tab-btn-square {
+  padding: 8px 20px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-bottom: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  transition: all 0.2s;
+}
+
+.tab-btn-square.active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  font-weight: 600;
+  background: var(--color-bg-secondary, #f0f7ff);
+}
+
 .order-stock-panel {
   margin-top: 0;
 }
