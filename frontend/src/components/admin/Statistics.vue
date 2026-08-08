@@ -50,15 +50,22 @@
             <div class="chart-grid">
                 <div class="chart-card">
                     <h3 class="chart-title">商品分类分布</h3>
-                    <div class="bar-chart">
-                        <div v-for="item in categoryStats" :key="item.categoryId" class="bar-row">
-                            <div class="bar-label">{{ item.categoryName }}</div>
-                            <div class="bar-track">
-                                <div class="bar-fill" :style="{ width: item.percent + '%', background: item.color }">
-                                    <span class="bar-value">{{ item.count }}</span>
+                    <div class="category-grid">
+                        <div v-for="item in categoryStats" :key="item.categoryId" class="category-card">
+                            <div class="category-accent" :style="{ background: item.color }"></div>
+                            <div class="category-card-body">
+                                <div class="category-name">{{ item.categoryName }}</div>
+                                <div class="category-count">{{ item.count }}<span class="category-unit">种</span></div>
+                                <div class="category-meta">
+                                    <span>库存 {{ item.stock }}</span>
+                                    <span class="meta-divider">|</span>
+                                    <span>均价 {{ currencySymbol }}{{ formatNum(item.avgPrice) }}</span>
                                 </div>
+                                <div class="category-bar">
+                                    <div class="category-bar-fill" :style="{ width: item.percent + '%', background: item.color }"></div>
+                                </div>
+                                <div class="category-percent">{{ item.percent }}%</div>
                             </div>
-                            <div class="bar-percent">{{ item.percent }}%</div>
                         </div>
                         <div v-if="categoryStats.length === 0" class="empty-tip">暂无数据</div>
                     </div>
@@ -179,7 +186,7 @@ interface StatisticsVO {
 }
 
 
-const CATEGORY_BAR_COLOR = '#667eea'
+const CATEGORY_COLORS = ['#667eea', '#52c41a', '#faad14', '#13c2c2', '#f5222d', '#eb2f96', '#722ed1', '#fa8c16']
 const PRICE_COLORS = ['#52c41a', '#667eea', '#faad14', '#13c2c2', '#f5222d']
 
 const EMPTY_SUMMARY: Summary = {
@@ -211,9 +218,9 @@ onMounted(async () => {
         const res = await get<StatisticsVO>('/statistics')
         if (res.success && res.data) {
             summary.value = { ...EMPTY_SUMMARY, ...res.data.summary }
-            categoryStats.value = (res.data.categoryStats || []).map((c) => ({
+            categoryStats.value = (res.data.categoryStats || []).map((c, i) => ({
                 ...c,
-                color: CATEGORY_BAR_COLOR,
+                color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
             }))
             const priceList = res.data.priceRangeStats || []
             const maxCount = Math.max(...priceList.map(p => p.count), 1)
@@ -236,6 +243,8 @@ const adminPercent = computed(() => {
     const total = summary.value.totalUsers || 1
     return Math.round((summary.value.adminUsers / total) * 100)
 })
+
+const currencySymbol = computed(() => configStore.configs['currency_symbol'] || '¥')
 
 const normalPercent = computed(() => {
     const total = summary.value.totalUsers || 1
