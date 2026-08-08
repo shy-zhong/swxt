@@ -49,7 +49,7 @@ public class FileService {
         }
 
         String fileName = UUID.randomUUID() + "." + ext;
-        Path targetDir = Paths.get(uploadDir, subdir);
+        Path targetDir = Paths.get(uploadDir, subdir).toAbsolutePath();
         try {
             Files.createDirectories(targetDir);
             Path target = targetDir.resolve(fileName);
