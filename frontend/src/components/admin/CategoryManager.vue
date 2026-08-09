@@ -3,45 +3,11 @@
         <div v-if="error" class="error">{{ error }}</div>
 
         <h3>分类管理</h3>
-        <div class="accordion">
-            <div v-for="parent in parentCategories" :key="parent.id" class="accordion-item">
-                <div class="accordion-header" @click="toggleParent(parent.id)">
-                    <span class="accordion-arrow" :class="{ expanded: expandedParent === parent.id }">▶</span>
-                    <span class="accordion-title">{{ parent.name }}</span>
-                    <span class="accordion-count">{{ getChildCategories(parent.id).length }} 个子分类</span>
-                    <div class="accordion-header-actions">
-                        <button class="action-btn" @click.stop="openCategoryEdit(parent)">编辑</button>
-                        <button class="action-btn delete" @click.stop="deleteCategory(parent)">删除</button>
-                        <button class="action-btn add-sub" @click.stop="openSubCategoryCreate(parent.id)">+ 子分类</button>
-                    </div>
-                </div>
-                <div v-if="expandedParent === parent.id" class="accordion-body">
-                    <table class="product-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>子分类名称</th>
-                                <th>排序号</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="child in getChildCategories(parent.id)" :key="child.id">
-                                <td>{{ child.id }}</td>
-                                <td>{{ child.name }}</td>
-                                <td>{{ child.sortOrder }}</td>
-                                <td>
-                                    <button class="action-btn" @click="openCategoryEdit(child)">编辑</button>
-                                    <button class="action-btn delete" @click="deleteCategory(child)">删除</button>
-                                </td>
-                            </tr>
-                            <tr v-if="getChildCategories(parent.id).length === 0">
-                                <td colspan="4" class="empty-row">暂无子分类</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+
+        <div class="category-tree">
+            <CategoryTreeNode v-for="node in tree" :key="node.category.id" :node="node"
+                @add-child="openSubCategoryCreate" @edit="openCategoryEdit" @delete="deleteCategory" />
+            <div v-if="tree.length === 0" class="empty-row">暂无分类，点击下方按钮新增</div>
         </div>
 
         <ModalPanel :visible="categoryEditing" :title="categoryForm.id ? '编辑分类' : '新增分类'" @close="categoryEditing = false">
@@ -52,9 +18,8 @@
             <div class="form-row">
                 <label>父分类</label>
                 <select v-model.number="categoryForm.parentId">
-                    <option :value="0">无（作为父分类）</option>
-                    <option v-for="parent in parentCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
-                    </option>
+                    <option :value="0">无（作为顶级分类）</option>
+                    <option v-for="opt in parentOptions" :key="opt.id" :value="opt.id">{{ opt.path }}</option>
                 </select>
             </div>
             <div class="form-row">
@@ -68,7 +33,7 @@
         </ModalPanel>
 
         <div class="form-actions panel-actions">
-            <button @click="openCategoryCreate">新增父分类</button>
+            <button @click="openCategoryCreate">新增顶级分类</button>
         </div>
     </div>
 </template>
@@ -77,43 +42,34 @@
 import { ref, onMounted, computed } from 'vue'
 import { get, post, put, del } from '../../utils/request'
 import ModalPanel from '../common/ModalPanel.vue'
+import CategoryTreeNode from './CategoryTreeNode.vue'
+import { buildTree, buildPathMap, collectDescendantIds } from '../../utils/category'
+import type { Category } from '../../utils/category'
 
-interface Category {
-    id: number
-    name: string
-    parentId: number
-    sortOrder: number
-}
-
-const emit = defineEmits<{
-    (e: 'close'): void
-}>()
-
-/** 列表数据 */
 const categories = ref<Category[]>([])
 const error = ref('')
 
-/** 表单状态 */
 const categoryEditing = ref(false)
-const expandedParent = ref<number | null>(null)
 const categoryForm = ref<{ id?: number; name: string; parentId: number; sortOrder: number }>({
     name: '',
     parentId: 0,
     sortOrder: 0,
 })
 
-/** 父分类列表（按排序号升序） */
-const parentCategories = computed(() =>
-    categories.value.filter(c => c.parentId === 0).sort((a, b) => a.sortOrder - b.sortOrder)
-)
+const tree = computed(() => buildTree(categories.value))
+const pathMap = computed(() => buildPathMap(categories.value))
 
-function getChildCategories(parentId: number): Category[] {
-    return categories.value.filter(c => c.parentId === parentId).sort((a, b) => a.sortOrder - b.sortOrder)
-}
-
-function toggleParent(id: number) {
-    expandedParent.value = expandedParent.value === id ? null : id
-}
+/**
+ * 父分类下拉选项：按路径排序；
+ */
+const parentOptions = computed(() => {
+    const list = categories.value
+        .map(c => ({ id: c.id, path: pathMap.value.get(c.id) || c.name }))
+        .sort((a, b) => a.path.localeCompare(b.path, 'zh'))
+    if (!categoryForm.value.id) return list
+    const excluded = collectDescendantIds(categories.value, categoryForm.value.id)
+    return list.filter(o => !excluded.has(o.id))
+})
 
 async function loadCategories() {
     error.value = ''
@@ -134,9 +90,9 @@ function openCategoryCreate() {
     categoryEditing.value = true
 }
 
-function openSubCategoryCreate(parentId: number) {
+function openSubCategoryCreate(parent: Category) {
     categoryEditing.value = true
-    categoryForm.value = { name: '', parentId, sortOrder: 0 }
+    categoryForm.value = { name: '', parentId: parent.id, sortOrder: 0 }
 }
 
 function openCategoryEdit(category: Category) {
@@ -177,6 +133,11 @@ async function saveCategory() {
 }
 
 async function deleteCategory(category: Category) {
+    const childCount = categories.value.filter(c => c.parentId === category.id).length
+    if (childCount > 0) {
+        error.value = `该分类下存在 ${childCount} 个子分类，请先删除子分类`
+        return
+    }
     if (!confirm(`确定删除分类 ${category.name} 吗？`)) return
     error.value = ''
     try {

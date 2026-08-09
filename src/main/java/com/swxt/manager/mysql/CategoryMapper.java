@@ -34,6 +34,18 @@ public interface CategoryMapper {
     int update(Category category);
 
 /**
+ * 统计指定父分类下的子分类数量（任意层级直接子级）
+ */
+    @Select("SELECT COUNT(*) FROM category WHERE parent_id = #{parentId}")
+    long countByParentId(Long parentId);
+
+/**
+ * 统计被商品引用的数量（product.category_id 指向该分类）
+ */
+    @Select("SELECT COUNT(*) FROM product WHERE category_id = #{categoryId}")
+    long countProductsByCategoryId(Long categoryId);
+
+/**
  * 按 ID 删除分类
  */
     @Delete("DELETE FROM category WHERE id = #{id}")

@@ -1,5 +1,7 @@
 package com.swxt.manager.service;
 
+import com.swxt.manager.config.BusinessException;
+import com.swxt.manager.config.Core;
 import com.swxt.manager.entity.Category;
 import com.swxt.manager.mysql.CategoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +47,21 @@ public class CategoryService {
 
     /**
      * 按 ID 删除分类，返回是否成功
+     *
+     * <p>保护规则：分类不存在、存在子分类、被商品引用时拒绝删除，
+     * 抛出 BusinessException 由全局异常处理器转为 JSON。</p>
      */
     public boolean delete(Long id) {
+        Category existing = categoryMapper.findById(id);
+        if (existing == null) {
+            throw new BusinessException(Core.ResultCode.NOT_FOUND, "分类不存在");
+        }
+        if (categoryMapper.countByParentId(id) > 0) {
+            throw new BusinessException(Core.ResultCode.BAD_REQUEST, "该分类下存在子分类，请先删除子分类");
+        }
+        if (categoryMapper.countProductsByCategoryId(id) > 0) {
+            throw new BusinessException(Core.ResultCode.BAD_REQUEST, "该分类已被商品引用，无法删除");
+        }
         return categoryMapper.deleteById(id) > 0;
     }
 }

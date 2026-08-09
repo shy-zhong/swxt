@@ -25,8 +25,11 @@
                 <input v-model="createForm.name" type="text" />
             </div>
             <div class="form-row">
-                <label>分类ID</label>
-                <input v-model.number="createForm.categoryId" type="number" />
+                <label>分类</label>
+                <select v-model.number="createForm.categoryId">
+                    <option :value="0">请选择分类</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ categoryPath(cat.id) }}</option>
+                </select>
             </div>
             <div class="form-row">
                 <label>价格</label>
@@ -65,8 +68,11 @@
                 <input v-model="editForm.name" type="text" :disabled="!editing" />
             </div>
             <div class="form-row">
-                <label>分类ID</label>
-                <input v-model.number="editForm.categoryId" type="number" :disabled="!editing" />
+                <label>分类</label>
+                <select v-model.number="editForm.categoryId" :disabled="!editing">
+                    <option :value="0">请选择分类</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ categoryPath(cat.id) }}</option>
+                </select>
             </div>
             <div class="form-row">
                 <label>价格</label>
@@ -109,7 +115,7 @@
                 <label>分类</label>
                 <select v-model="filterCategoryId">
                     <option :value="0">全部分类</option>
-                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ categoryPath(cat.id) }}</option>
                 </select>
             </div>
             <div class="filter-item">
@@ -195,6 +201,8 @@ import { get, post, put, del, upload } from '../../utils/request'
 import { configStore, getConfig } from '../../utils/configStore'
 import router from '../../route/Router'
 import CategoryManager from './CategoryManager.vue'
+import { buildPathMap } from '../../utils/category'
+import type { Category } from '../../utils/category'
 import Pagination from '../common/Pagination.vue'
 import SearchToolbar from '../common/SearchToolbar.vue'
 import ModalPanel from '../common/ModalPanel.vue'
@@ -231,8 +239,14 @@ const error = ref('')
 const searchKeyword = ref('')
 const imageErrorMap = ref<Record<number, boolean>>({})
 
-/** 分类下拉数据 */
-const categories = ref<{ id: number; name: string }[]>([])
+/** 分类下拉数据（扁平）与层级路径映射 */
+const categories = ref<Category[]>([])
+const categoryPathMap = ref<Map<number, string>>(new Map())
+
+/** 分类下拉展示：完整层级路径，路径映射缺失时回退到名称 */
+function categoryPath(id: number): string {
+    return categoryPathMap.value.get(id) || categories.value.find(c => c.id === id)?.name || ''
+}
 
 /** 筛选条件：分类 ID（0=全部）、价格区间（null=不限）、状态（-1=全部） */
 const filterCategoryId = ref(0)
@@ -319,9 +333,10 @@ async function loadProducts() {
 
 async function loadCategories() {
     try {
-        const res = await get<{ id: number; name: string }[]>('/categories')
+        const res = await get<Category[]>('/categories')
         if (res.success && Array.isArray(res.data)) {
             categories.value = res.data
+            categoryPathMap.value = buildPathMap(res.data)
         }
     } catch {
         // 分类加载失败不阻塞商品列表
