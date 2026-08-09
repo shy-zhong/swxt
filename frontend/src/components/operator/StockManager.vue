@@ -75,6 +75,7 @@
           <tr v-if="orders.length === 0"><td colspan="6" style="text-align:center;">暂无订单数据</td></tr>
         </tbody>
       </table>
+      <Pagination :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
     </div>
 
     <ModalPanel :visible="panelVisible" :title="operateForm.type === 'IN' ? '入库' : '出库'" @close="cancelPanel">
@@ -257,15 +258,22 @@ function handleSearch() {
 function goToPage(target: number) {
   if (target < 1 || (totalPages.value > 0 && target > totalPages.value)) return
   page.value = target
-  loadProducts()
+  if (activeTab.value === 'order') {
+    loadOrders()
+  } else {
+    loadProducts()
+  }
 }
 
 function switchTab(tab: 'product' | 'order') {
   activeTab.value = tab
   error.value = ''
   successMsg.value = ''
+  page.value = 1
   if (tab === 'order') {
     loadOrders()
+  } else {
+    loadProducts()
   }
 }
 
@@ -318,9 +326,12 @@ async function confirmOperate() {
 async function loadOrders() {
   error.value = ''
   try {
-    const res = await get<PageResult<OrderInfo>>('/orders?page=1&size=100')
+    const res = await get<PageResult<OrderInfo>>(`/orders?page=${page.value}&size=${size.value}`)
     if (res.success && res.data) {
       orders.value = res.data.list
+      total.value = res.data.total
+      totalPages.value = res.data.totalPages
+      page.value = res.data.page
     } else {
       error.value = res.message || '加载订单列表失败'
     }
