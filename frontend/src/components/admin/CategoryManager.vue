@@ -10,7 +10,8 @@
             <div v-if="tree.length === 0" class="empty-row">暂无分类，点击下方按钮新增</div>
         </div>
 
-        <ModalPanel :visible="categoryEditing" :title="categoryForm.id ? '编辑分类' : '新增分类'" @close="categoryEditing = false">
+        <ModalPanel :visible="categoryEditing" :title="categoryForm.id ? '编辑分类' : '新增分类'"
+            @close="categoryEditing = false">
             <div class="form-row">
                 <label>分类名称</label>
                 <input v-model="categoryForm.name" type="text" />
@@ -91,12 +92,12 @@ function openCategoryCreate() {
 }
 
 function openSubCategoryCreate(parent: Category) {
-    categoryEditing.value = true
     categoryForm.value = { name: '', parentId: parent.id, sortOrder: 0 }
+    categoryEditing.value = true
 }
 
 function openCategoryEdit(category: Category) {
-    categoryForm.value = { id: category.id, name: category.name, parentId: category.parentId, sortOrder: category.sortOrder }
+    categoryForm.value = {...category}
     categoryEditing.value = true
 }
 
@@ -105,10 +106,7 @@ async function saveCategory() {
     try {
         if (categoryForm.value.id) {
             const res = await put<{ code: number; message: string }>('/categories', {
-                id: categoryForm.value.id,
-                name: categoryForm.value.name,
-                parentId: categoryForm.value.parentId,
-                sortOrder: categoryForm.value.sortOrder,
+                ...categoryForm.value
             })
             if (!res.success) {
                 error.value = res.message || '保存分类失败'
@@ -133,12 +131,11 @@ async function saveCategory() {
 }
 
 async function deleteCategory(category: Category) {
-    const childCount = categories.value.filter(c => c.parentId === category.id).length
-    if (childCount > 0) {
-        error.value = `该分类下存在 ${childCount} 个子分类，请先删除子分类`
-        return
-    }
-    if (!confirm(`确定删除分类 ${category.name} 吗？`)) return
+    const descendantCount = collectDescendantIds(categories.value, category.id).size
+    const hint = descendantCount > 0
+        ? `将级联删除其下 ${descendantCount} 个子分类`
+        : '该分类无子分类'
+    if (!confirm(`确定删除分类 ${category.name}吗?\n${hint}。`)) return
     error.value = ''
     try {
         const res = await del<{ code: number; message: string }>(`/categories/${category.id}`)

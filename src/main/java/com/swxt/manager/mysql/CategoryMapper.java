@@ -34,20 +34,22 @@ public interface CategoryMapper {
     int update(Category category);
 
 /**
- * 统计指定父分类下的子分类数量（任意层级直接子级）
+ * 查询指定父分类下的直接子分类 ID 列表（用于递归收集子孙）
  */
-    @Select("SELECT COUNT(*) FROM category WHERE parent_id = #{parentId}")
-    long countByParentId(Long parentId);
+    @Select("SELECT id FROM category WHERE parent_id = #{parentId}")
+    List<Long> findIdsByParentId(Long parentId);
 
 /**
- * 统计被商品引用的数量（product.category_id 指向该分类）
+ * 统计多个分类中被商品引用的数量（product.category_id 命中任意一个）
  */
-    @Select("SELECT COUNT(*) FROM product WHERE category_id = #{categoryId}")
-    long countProductsByCategoryId(Long categoryId);
+    @Select("<script>SELECT COUNT(*) FROM product WHERE category_id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach></script>")
+    long countProductsByCategoryIds(@Param("ids") List<Long> ids);
 
 /**
- * 按 ID 删除分类
+ * 批量删除多个分类（级联删除）
  */
-    @Delete("DELETE FROM category WHERE id = #{id}")
-    int deleteById(Long id);
+    @Delete("<script>DELETE FROM category WHERE id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach></script>")
+    int deleteByIds(@Param("ids") List<Long> ids);
 }
