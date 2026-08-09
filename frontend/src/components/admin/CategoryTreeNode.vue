@@ -1,7 +1,7 @@
 <template>
     <div class="tree-node">
         <div class="tree-row" :style="{ paddingLeft: (depth ?? 0) * 20 + 'px' }">
-            <span v-if="node.children.length > 0" class="tree-arrow" :class="{ expanded: expanded }"
+            <span v-if="node.children.length > 0" class="tree-arrow" :class="{ expanded: expanded }" 
                 @click="expanded = !expanded">▶</span>
             <span v-else class="tree-arrow tree-arrow-empty">▶</span>
             <span class="tree-name">{{ node.category.name }}</span>
@@ -13,7 +13,7 @@
             </div>
         </div>
         <template v-if="expanded && node.children.length > 0">
-            <CategoryTreeNode v-for="child in node.children" :key="child.category.id" :node="child" :depth="depth! + 1"
+            <CategoryTreeNode v-for="child in node.children" :key="child.category.id" :node="child" :depth="(depth ?? 0) + 1"
                 @add-child="$emit('add-child', $event)"
                 @edit="$emit('edit', $event)"
                 @delete="$emit('delete', $event)" />

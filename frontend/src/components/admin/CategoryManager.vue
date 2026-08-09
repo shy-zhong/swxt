@@ -5,7 +5,7 @@
         <h3>分类管理</h3>
 
         <div class="category-tree">
-            <CategoryTreeNode v-for="node in tree" :key="node.category.id" :node="node"
+            <CategoryTreeNode v-for="node in tree" :key="node.category.id" :node="node" :depth="0"
                 @add-child="openSubCategoryCreate" @edit="openCategoryEdit" @delete="deleteCategory" />
             <div v-if="tree.length === 0" class="empty-row">暂无分类，点击下方按钮新增</div>
         </div>
