@@ -69,6 +69,9 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
         order.setStatus("PENDING");
         order.setRemark(request.getRemark());
+        order.setReceiverName(request.getReceiverName());
+        order.setReceiverPhone(request.getReceiverPhone());
+        order.setReceiverAddress(request.getReceiverAddress());
         orderMapper.insertOrder(order);
 
         for (OrderItem item : items) {

@@ -32,6 +32,15 @@ public class OrderInfo {
     /** 备注 */
     private String remark;
 
+    /** 收货人 */
+    private String receiverName;
+
+    /** 收货电话 */
+    private String receiverPhone;
+
+    /** 收货地址 */
+    private String receiverAddress;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 

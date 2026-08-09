@@ -102,6 +102,19 @@ public class UserController {
     }
 
     /**
+     * 查询当前登录用户信息（含真实姓名/手机号等，用于下单表单预填）
+     */
+    @GetMapping("/users/me")
+    public Result<User> currentUser() {
+        Long userId = securityUtil.getUserId();
+        User user = userService.getUserById(userId);
+        if (user == null) {
+            return Result.error(404, "用户不存在");
+        }
+        return Result.success(user);
+    }
+
+    /**
      * 删除用户
      */
     @DeleteMapping("/users/{id}")

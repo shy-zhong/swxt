@@ -151,6 +151,13 @@ public class UserService {
     }
 
 /**
+ * 按 ID 查询用户（含软删除过滤），用于获取当前登录用户信息
+ */
+    public User getUserById(Long id) {
+        return userMapping.loginById(String.valueOf(id));
+    }
+
+/**
  * 删除用户，返回是否删除成功
  */
     public boolean deleteUser(Long id) {

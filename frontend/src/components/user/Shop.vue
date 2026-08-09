@@ -44,7 +44,7 @@
         <div class="shop-card-actions">
           <button class="action-btn" @click="showDetail(product)">查看详情</button>
           <button class="action-btn" @click="addToCart(product)">加入购物车</button>
-          <button class="action-btn buy-now" @click="buyNow(product)">立即购买</button>
+          <button class="action-btn buy-now" @click="openBuyPanel(product)">立即购买</button>
         </div>
       </div>
     </div>
@@ -85,8 +85,47 @@
         </div>
         <div class="form-actions">
           <button class="action-btn" @click="addToCart(detailProduct)">加入购物车</button>
-          <button class="action-btn buy-now" @click="buyNow(detailProduct)">立即购买</button>
+          <button class="action-btn buy-now" @click="openBuyPanel(detailProduct)">立即购买</button>
           <button class="cancel-btn" @click="closeDetail">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 立即购买确认面板：确认数量与收货信息后直接下单 -->
+    <div v-if="buyVisible" class="panel-overlay" @click.self="closeBuyPanel">
+      <div class="edit-panel">
+        <h3>确认订单</h3>
+        <div class="form-row">
+          <label>商品</label>
+          <input :value="buyProduct.name" type="text" disabled />
+        </div>
+        <div class="form-row">
+          <label>单价</label>
+          <input :value="currencySymbol + formatPrice(buyProduct.price)" type="text" disabled />
+        </div>
+        <div class="form-row">
+          <label>数量</label>
+          <div class="qty-control">
+            <button class="qty-btn" @click="decreaseBuyQty">-</button>
+            <span class="qty-num">{{ buyQuantity }}</span>
+            <button class="qty-btn" @click="increaseBuyQty">+</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>收货人</label>
+          <input v-model="buyForm.receiverName" type="text" placeholder="请输入收货人姓名" />
+        </div>
+        <div class="form-row">
+          <label>手机号</label>
+          <input v-model="buyForm.receiverPhone" type="text" placeholder="请输入联系电话" />
+        </div>
+        <div class="form-row">
+          <label>收货地址</label>
+          <input v-model="buyForm.receiverAddress" type="text" placeholder="请输入收货地址" />
+        </div>
+        <div class="form-actions">
+          <button class="action-btn buy-now" @click="confirmBuy">确认购买</button>
+          <button class="cancel-btn" @click="closeBuyPanel">取消</button>
         </div>
       </div>
     </div>
@@ -131,6 +170,17 @@ const cartCount = ref(0)
 
 const detailVisible = ref(false)
 const detailProduct = ref<Product>({ id: 0, name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 })
+
+const buyVisible = ref(false)
+const buyProduct = ref<Product>({ id: 0, name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 })
+const buyQuantity = ref(1)
+const buyForm = ref({ receiverName: '', receiverPhone: '', receiverAddress: '' })
+
+interface UserInfo {
+  realName: string
+  phone: string
+  email: string
+}
 
 const pageSize = 12
 const currentPage = ref(1)
@@ -192,12 +242,80 @@ async function addToCart(product: Product) {
 }
 
 /**
- * 立即购买：加入购物车后跳转到购物车页
+ * 立即购买：打开确认面板（确认数量与收货信息），不再经过购物车
  */
-async function buyNow(product: Product) {
-  const ok = await addToCart(product)
-  if (ok) {
-    router.push('/user/cart')
+async function openBuyPanel(product: Product) {
+  buyProduct.value = { ...product }
+  buyQuantity.value = 1
+  buyForm.value = { receiverName: '', receiverPhone: '', receiverAddress: '' }
+  error.value = ''
+  buyVisible.value = true
+  // 预填当前登录用户信息（真实姓名/手机号），失败时不阻塞手动填写
+  try {
+    const res = await get<UserInfo>('/users/me')
+    if (res.success && res.data) {
+      buyForm.value.receiverName = res.data.realName || ''
+      buyForm.value.receiverPhone = res.data.phone || ''
+    }
+  } catch {
+    // 忽略预填失败
+  }
+}
+
+/**
+ * 关闭购买确认面板
+ */
+function closeBuyPanel() {
+  buyVisible.value = false
+}
+
+/**
+ * 购买数量 +1（不超过库存）
+ */
+function increaseBuyQty() {
+  if (buyQuantity.value < buyProduct.value.stock) {
+    buyQuantity.value += 1
+  }
+}
+
+/**
+ * 购买数量 -1（不小于 1）
+ */
+function decreaseBuyQty() {
+  if (buyQuantity.value > 1) {
+    buyQuantity.value -= 1
+  }
+}
+
+/**
+ * 确认购买：校验数量与收货信息后直接调用 POST /orders 下单，成功后跳转我的订单页
+ */
+async function confirmBuy() {
+  if (buyQuantity.value < 1 || buyQuantity.value > buyProduct.value.stock) {
+    error.value = '购买数量超出库存范围'
+    return
+  }
+  if (!buyForm.value.receiverName.trim() || !buyForm.value.receiverPhone.trim() || !buyForm.value.receiverAddress.trim()) {
+    error.value = '请填写完整的收货信息'
+    return
+  }
+  try {
+    const res = await post<{ id: number }>('/orders', {
+      items: [{ productId: buyProduct.value.id, quantity: buyQuantity.value }],
+      remark: '立即购买',
+      receiverName: buyForm.value.receiverName.trim(),
+      receiverPhone: buyForm.value.receiverPhone.trim(),
+      receiverAddress: buyForm.value.receiverAddress.trim()
+    })
+    if (!res.success) {
+      error.value = res.message || '下单失败'
+      return
+    }
+    buyVisible.value = false
+    error.value = ''
+    router.push('/user/myOrders')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '下单失败，请稍后重试'
   }
 }
 

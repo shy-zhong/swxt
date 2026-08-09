@@ -16,6 +16,15 @@ public class CreateOrderRequest {
     /** 备注 */
     private String remark;
 
+    /** 收货人 */
+    private String receiverName;
+
+    /** 收货电话 */
+    private String receiverPhone;
+
+    /** 收货地址 */
+    private String receiverAddress;
+
     /**
      * 订单项请求：商品 ID 与购买数量
      */

@@ -75,6 +75,18 @@
           <label>备注</label>
           <input :value="detailOrder?.remark || '-'" type="text" disabled />
         </div>
+        <div class="form-row">
+          <label>收货人</label>
+          <input :value="detailOrder?.receiverName || '-'" type="text" disabled />
+        </div>
+        <div class="form-row">
+          <label>收货电话</label>
+          <input :value="detailOrder?.receiverPhone || '-'" type="text" disabled />
+        </div>
+        <div class="form-row">
+          <label>收货地址</label>
+          <input :value="detailOrder?.receiverAddress || '-'" type="text" disabled />
+        </div>
         <table class="product-table" style="margin:10px 0;">
           <thead>
             <tr><th>商品名</th><th>单价</th><th>数量</th><th>小计</th></tr>
@@ -119,6 +131,9 @@ interface OrderInfo {
   totalAmount: number
   status: string
   remark: string
+  receiverName: string
+  receiverPhone: string
+  receiverAddress: string
   createdAt: string
   items: OrderItem[]
 }

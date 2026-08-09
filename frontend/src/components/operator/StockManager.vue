@@ -112,6 +112,9 @@
         <div class="form-row"><label>用户</label><input :value="detailOrder?.username" type="text" disabled /></div>
         <div class="form-row"><label>总金额</label><input :value="currencySymbol + formatPrice(detailOrder?.totalAmount || 0)" type="text" disabled /></div>
         <div class="form-row"><label>状态</label><input :value="orderStatusText(detailOrder?.status || '')" type="text" disabled /></div>
+        <div class="form-row"><label>收货人</label><input :value="detailOrder?.receiverName || '-'" type="text" disabled /></div>
+        <div class="form-row"><label>收货电话</label><input :value="detailOrder?.receiverPhone || '-'" type="text" disabled /></div>
+        <div class="form-row"><label>收货地址</label><input :value="detailOrder?.receiverAddress || '-'" type="text" disabled /></div>
         <table class="product-table" style="margin:10px 0;">
           <thead><tr><th>商品名</th><th>单价</th><th>数量</th></tr></thead>
           <tbody>
@@ -173,6 +176,9 @@ interface OrderInfo {
   username: string
   totalAmount: number
   status: string
+  receiverName: string
+  receiverPhone: string
+  receiverAddress: string
   createdAt: string
   items: OrderItem[]
 }

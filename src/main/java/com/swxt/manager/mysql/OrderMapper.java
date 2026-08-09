@@ -14,8 +14,8 @@ public interface OrderMapper {
     /**
      * 插入订单主表
      */
-    @Insert("INSERT INTO orders(user_id, username, total_amount, status, remark) " +
-            "VALUES(#{userId}, #{username}, #{totalAmount}, #{status}, #{remark})")
+    @Insert("INSERT INTO orders(user_id, username, total_amount, status, remark, receiver_name, receiver_phone, receiver_address) " +
+            "VALUES(#{userId}, #{username}, #{totalAmount}, #{status}, #{remark}, #{receiverName}, #{receiverPhone}, #{receiverAddress})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertOrder(OrderInfo order);
 
