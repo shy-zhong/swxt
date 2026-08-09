@@ -7,6 +7,7 @@
     </div>
 
     <div v-if="error" class="error">{{ error }}</div>
+    <div v-if="successMsg" class="success-tip">{{ successMsg }}</div>
 
     <SearchToolbar v-model="searchKeyword" placeholder="搜索用户名/订单号..." @search="handleSearch">
       <template #actions>
@@ -41,6 +42,8 @@
           <td>{{ formatTime(order.createdAt) }}</td>
           <td>{{ order.remark || '-' }}</td>
           <td>
+            <button class="action-btn" v-if="order.status === 'PENDING'" @click="stockOutByOrder(order.id)">出库</button>
+            <button class="action-btn delete" v-if="order.status === 'COMPLETED'" @click="stockInByOrder(order.id)">退货入库</button>
             <button class="action-btn" @click="showDetail(order)">查看详情</button>
           </td>
         </tr>
@@ -108,7 +111,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { get } from '../../utils/request'
+import { get, post } from '../../utils/request'
 import { getConfig } from '../../utils/configStore'
 import router from '../../route/Router'
 import SearchToolbar from '../common/SearchToolbar.vue'
@@ -146,6 +149,7 @@ interface PageResult<T> {
 /** 列表数据 */
 const orders = ref<OrderInfo[]>([])
 const error = ref('')
+const successMsg = ref('')
 const searchKeyword = ref('')
 const statusFilter = ref('')
 
@@ -221,6 +225,40 @@ function handleSearch() {
 function handleFilter() {
   page.value = 1
   loadOrders()
+}
+
+/** 订单出库：扣减库存并标记为已出库 */
+async function stockOutByOrder(orderId: number) {
+  error.value = ''
+  successMsg.value = ''
+  try {
+    const res = await post(`/stock/order/${orderId}/out`, {})
+    if (res.success) {
+      successMsg.value = '订单出库成功'
+      await loadOrders()
+    } else {
+      error.value = res.message || '订单出库失败'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '网络错误'
+  }
+}
+
+/** 订单退货入库：回补库存并标记为已退货 */
+async function stockInByOrder(orderId: number) {
+  error.value = ''
+  successMsg.value = ''
+  try {
+    const res = await post(`/stock/order/${orderId}/in`, {})
+    if (res.success) {
+      successMsg.value = '订单退货入库成功'
+      await loadOrders()
+    } else {
+      error.value = res.message || '订单退货入库失败'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '网络错误'
+  }
 }
 
 function goToPage(target: number) {

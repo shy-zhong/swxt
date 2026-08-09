@@ -9,12 +9,6 @@
     <div v-if="error" class="error">{{ error }}</div>
     <div v-if="successMsg" class="success-tip">{{ successMsg }}</div>
 
-    <div class="tab-bar tab-bar-square">
-      <button :class="['tab-btn-square', { active: activeTab === 'product' }]" @click="switchTab('product')">商品出入库</button>
-      <button :class="['tab-btn-square', { active: activeTab === 'order' }]" @click="switchTab('order')">订单出入库</button>
-    </div>
-
-    <div v-if="activeTab === 'product'">
     <SearchToolbar v-model="searchKeyword" placeholder="搜索商品名..." @search="handleSearch">
       <template #actions>
         <button class="toolbar-btn" @click="loadProducts">刷新</button>
@@ -49,39 +43,6 @@
     </table>
 
     <Pagination :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
-    </div>
-
-    <div v-if="activeTab === 'order'" class="order-stock-panel">
-      <SearchToolbar v-model="searchKeyword" placeholder="搜索用户名/订单号..." @search="handleSearch">
-        <template #actions>
-          <select v-model="statusFilter" class="search-select" @change="handleFilter">
-            <option value="">全部状态</option>
-            <option value="PENDING">待出库</option>
-            <option value="COMPLETED">已出库</option>
-            <option value="CANCELLED">已退货</option>
-          </select>
-          <button class="toolbar-btn" @click="loadOrders">刷新</button>
-        </template>
-      </SearchToolbar>
-      <table class="product-table">
-        <thead><tr><th>订单号</th><th>用户</th><th>金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
-        <tbody>
-          <tr v-for="order in orders" :key="order.id">
-            <td>{{ order.id }}</td><td>{{ order.username }}</td>
-            <td>{{ currencySymbol }}{{ formatPrice(order.totalAmount) }}</td>
-            <td>{{ orderStatusText(order.status) }}</td>
-            <td>{{ formatTime(order.createdAt) }}</td>
-            <td>
-              <button class="action-btn" v-if="order.status === 'PENDING'" @click="stockOutByOrder(order.id)">出库</button>
-              <button class="action-btn delete" v-if="order.status === 'COMPLETED'" @click="stockInByOrder(order.id)">退货入库</button>
-              <button class="action-btn" @click="showOrderDetail(order)">详情</button>
-            </td>
-          </tr>
-          <tr v-if="orders.length === 0"><td colspan="6" style="text-align:center;">暂无订单数据</td></tr>
-        </tbody>
-      </table>
-      <Pagination :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
-    </div>
 
     <ModalPanel :visible="panelVisible" :title="operateForm.type === 'IN' ? '入库' : '出库'" @close="cancelPanel">
         <div class="form-row">
@@ -107,24 +68,6 @@
           <button @click="confirmOperate">确认</button>
           <button class="cancel-btn" @click="cancelPanel">取消</button>
         </template>
-    </ModalPanel>
-
-    <ModalPanel :visible="orderDetailVisible" :title="`订单详情 #${detailOrder?.id}`" @close="closeOrderDetail">
-        <div class="form-row"><label>用户</label><input :value="detailOrder?.username" type="text" disabled /></div>
-        <div class="form-row"><label>总金额</label><input :value="currencySymbol + formatPrice(detailOrder?.totalAmount || 0)" type="text" disabled /></div>
-        <div class="form-row"><label>状态</label><input :value="orderStatusText(detailOrder?.status || '')" type="text" disabled /></div>
-        <div class="form-row"><label>收货人</label><input :value="detailOrder?.receiverName || '-'" type="text" disabled /></div>
-        <div class="form-row"><label>收货电话</label><input :value="detailOrder?.receiverPhone || '-'" type="text" disabled /></div>
-        <div class="form-row"><label>收货地址</label><input :value="detailOrder?.receiverAddress || '-'" type="text" disabled /></div>
-        <table class="product-table" style="margin:10px 0;">
-          <thead><tr><th>商品名</th><th>单价</th><th>数量</th></tr></thead>
-          <tbody>
-            <tr v-for="item in detailOrder?.items" :key="item.id">
-              <td>{{ item.productName }}</td><td>{{ currencySymbol }}{{ formatPrice(item.price) }}</td><td>{{ item.quantity }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <template #actions><button class="cancel-btn" @click="closeOrderDetail">关闭</button></template>
     </ModalPanel>
 
   </div>
@@ -158,41 +101,13 @@ interface PageResult<T> {
   totalPages: number
 }
 
-interface OrderItem {
-  id: number
-  productName: string
-  price: number
-  quantity: number
-}
-
-interface OrderInfo {
-  id: number
-  username: string
-  totalAmount: number
-  status: string
-  receiverName: string
-  receiverPhone: string
-  receiverAddress: string
-  createdAt: string
-  items: OrderItem[]
-}
-
 /** 商品列表数据 */
 const products = ref<Product[]>([])
 const error = ref('')
 const successMsg = ref('')
 
-/** Tab 切换 */
-const activeTab = ref<'product' | 'order'>('product')
-
-/** 订单列表数据 */
-const orders = ref<OrderInfo[]>([])
-const orderDetailVisible = ref(false)
-const detailOrder = ref<OrderInfo | null>(null)
-
 /** 搜索与分页 */
 const searchKeyword = ref('')
-const statusFilter = ref('')
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
@@ -226,16 +141,6 @@ function isLowStock(stock: number): boolean {
   return getConfig('enable_stock_warning') === 'true' && stock < parseInt(getConfig('low_stock_threshold') || '50', 10)
 }
 
-function orderStatusText(status: string): string {
-  const map: Record<string, string> = { PENDING: '待出库', COMPLETED: '已出库', CANCELLED: '已退货' }
-  return map[status] || status
-}
-
-function formatTime(time: string | undefined): string {
-  if (!time) return ''
-  return time.replace('T', ' ').substring(0, 19)
-}
-
 async function loadProducts() {
   error.value = ''
   try {
@@ -258,40 +163,13 @@ async function loadProducts() {
 
 function handleSearch() {
   page.value = 1
-  if (activeTab.value === 'order') {
-    loadOrders()
-  } else {
-    loadProducts()
-  }
-}
-
-function handleFilter() {
-  page.value = 1
-  loadOrders()
+  loadProducts()
 }
 
 function goToPage(target: number) {
   if (target < 1 || (totalPages.value > 0 && target > totalPages.value)) return
   page.value = target
-  if (activeTab.value === 'order') {
-    loadOrders()
-  } else {
-    loadProducts()
-  }
-}
-
-function switchTab(tab: 'product' | 'order') {
-  activeTab.value = tab
-  error.value = ''
-  successMsg.value = ''
-  searchKeyword.value = ''
-  statusFilter.value = ''
-  page.value = 1
-  if (tab === 'order') {
-    loadOrders()
-  } else {
-    loadProducts()
-  }
+  loadProducts()
 }
 
 function openPanel(product: Product, type: 'IN' | 'OUT') {
@@ -338,72 +216,6 @@ async function confirmOperate() {
   } catch (e) {
     error.value = e instanceof Error ? e.message : '网络错误'
   }
-}
-
-async function loadOrders() {
-  error.value = ''
-  try {
-    const params = [`page=${page.value}`, `size=${size.value}`]
-    if (statusFilter.value) {
-      params.push(`status=${encodeURIComponent(statusFilter.value)}`)
-    }
-    if (searchKeyword.value.trim()) {
-      params.push(`keyword=${encodeURIComponent(searchKeyword.value.trim())}`)
-    }
-    const res = await get<PageResult<OrderInfo>>(`/orders?${params.join('&')}`)
-    if (res.success && res.data) {
-      orders.value = res.data.list
-      total.value = res.data.total
-      totalPages.value = res.data.totalPages
-      page.value = res.data.page
-    } else {
-      error.value = res.message || '加载订单列表失败'
-    }
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '网络错误'
-  }
-}
-
-async function stockOutByOrder(orderId: number) {
-  error.value = ''
-  successMsg.value = ''
-  try {
-    const res = await post(`/stock/order/${orderId}/out`, {})
-    if (res.success) {
-      successMsg.value = '订单出库成功'
-      await loadOrders()
-    } else {
-      error.value = res.message || '订单出库失败'
-    }
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '网络错误'
-  }
-}
-
-async function stockInByOrder(orderId: number) {
-  error.value = ''
-  successMsg.value = ''
-  try {
-    const res = await post(`/stock/order/${orderId}/in`, {})
-    if (res.success) {
-      successMsg.value = '订单退货入库成功'
-      await loadOrders()
-    } else {
-      error.value = res.message || '订单退货入库失败'
-    }
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '网络错误'
-  }
-}
-
-function showOrderDetail(order: OrderInfo) {
-  detailOrder.value = order
-  orderDetailVisible.value = true
-}
-
-function closeOrderDetail() {
-  orderDetailVisible.value = false
-  detailOrder.value = null
 }
 
 onMounted(async () => {
