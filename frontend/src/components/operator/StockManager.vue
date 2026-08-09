@@ -52,7 +52,12 @@
     </div>
 
     <div v-if="activeTab === 'order'" class="order-stock-panel">
-      <div class="toolbar-row"><button class="toolbar-btn" @click="loadOrders">刷新订单</button></div>
+      <div class="toolbar">
+        <div></div>
+        <div class="toolbar-actions">
+          <button class="toolbar-btn" @click="loadOrders">刷新订单</button>
+        </div>
+      </div>
       <table class="product-table">
         <thead><tr><th>订单号</th><th>用户</th><th>金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
         <tbody>

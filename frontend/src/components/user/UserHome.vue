@@ -6,19 +6,19 @@
       <p class="welcome">欢迎回来，{{ username }}</p>
       <div class="menu">
         <div class="menu-item" @click="goTo('/user/shop')">
-          <span class="icon">🛍️</span>
+          <span class="menu-icon">🛍️</span>
           <span>商品商城</span>
         </div>
         <div class="menu-item" @click="goTo('/user/cart')">
-          <span class="icon">🛒</span>
+          <span class="menu-icon">🛒</span>
           <span>我的购物车</span>
         </div>
         <div class="menu-item" @click="goTo('/user/myOrders')">
-          <span class="icon">📦</span>
+          <span class="menu-icon">📦</span>
           <span>我的订单</span>
         </div>
         <div class="menu-item">
-          <span class="icon">👤</span>
+          <span class="menu-icon">👤</span>
           <span>个人信息</span>
         </div>
       </div>

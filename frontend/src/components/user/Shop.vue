@@ -5,7 +5,7 @@
       <h2>商品商城</h2>
       <div class="header-actions">
         <div class="cart-icon" @click="router.push('/user/cart')">
-          <span class="icon">🛒</span>
+          <span class="cart-entry-icon">🛒</span>
           <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
         </div>
         <button class="back-btn" @click="router.push('/user/home')">返回</button>

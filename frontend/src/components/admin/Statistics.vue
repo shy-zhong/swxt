@@ -11,7 +11,7 @@
 
         <template v-else>
             <div class="summary-cards">
-                <div class="summary-card card-blue">
+                <div class="summary-card summary-card--products">
                     <div class="summary-icon">📦</div>
                     <div class="summary-body">
                         <div class="summary-label">商品总数</div>
@@ -20,7 +20,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="summary-card card-green">
+                <div class="summary-card summary-card--users">
                     <div class="summary-icon">👥</div>
                     <div class="summary-body">
                         <div class="summary-label">用户总数</div>
@@ -28,7 +28,7 @@
                         <div class="summary-sub">管理员 {{ summary.adminUsers }} / 普通用户 {{ summary.normalUsers }}</div>
                     </div>
                 </div>
-                <div class="summary-card card-orange">
+                <div class="summary-card summary-card--stock">
                     <div class="summary-icon">📈</div>
                     <div class="summary-body">
                         <div class="summary-label">库存总量</div>
@@ -36,7 +36,7 @@
                         <div class="summary-sub">库存价值 {{ configStore.configs['currency_symbol'] || '¥' }}{{ formatNum(summary.stockValue) }}</div>
                     </div>
                 </div>
-                <div class="summary-card card-purple">
+                <div class="summary-card summary-card--price">
                     <div class="summary-icon">💰</div>
                     <div class="summary-body">
                         <div class="summary-label">平均价格</div>

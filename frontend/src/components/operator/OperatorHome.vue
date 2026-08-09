@@ -6,19 +6,19 @@
       <p class="welcome">操作员 {{ username }}，您好</p>
       <div class="menu">
         <div class="menu-item" v-on:click="goTo('/operator/stockManager')">
-          <span class="icon">📦</span>
+          <span class="menu-icon">📦</span>
           <span>出入库管理</span>
         </div>
         <div class="menu-item" v-on:click="goTo('/operator/orders')">
-          <span class="icon">📋</span>
+          <span class="menu-icon">📋</span>
           <span>订单管理</span>
         </div>
         <div class="menu-item" v-on:click="goTo('/operator/stockLog')">
-          <span class="icon">📦</span>
+          <span class="menu-icon">📦</span>
           <span>出入库记录</span>
         </div>
         <div class="menu-item" v-on:click="goTo('/operator/settings')">
-          <span class="icon">⚙️</span>
+          <span class="menu-icon">⚙️</span>
           <span>系统设置</span>
         </div>
       </div>

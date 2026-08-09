@@ -6,27 +6,27 @@
       <p class="welcome">管理员 {{ username }}，您好</p>
       <div class="menu">
         <div class="menu-item" v-on:click="goTo('/admin/users')">
-          <span class="icon">👥</span>
+          <span class="menu-icon">👥</span>
           <span>用户管理</span>
         </div>
         <div class="menu-item" v-on:click="goTo('/admin/products')">
-          <span class="icon">📦</span>
+          <span class="menu-icon">📦</span>
           <span>商品管理</span>
         </div>
         <div class="menu-item" v-on:click="goTo('/admin/orders')">
-          <span class="icon">📋</span>
+          <span class="menu-icon">📋</span>
           <span>订单查看</span>
         </div>
         <div class="menu-item" v-on:click="goTo('/admin/statistics')">
-          <span class="icon">📊</span>
+          <span class="menu-icon">📊</span>
           <span>数据统计</span>
         </div>
         <div class="menu-item" v-on:click="goTo('/admin/settings')">
-          <span class="icon">⚙️</span>
+          <span class="menu-icon">⚙️</span>
           <span>系统设置</span>
         </div>
         <div class="menu-item" v-on:click="goTo('/admin/logs')">
-          <span class="icon">📝</span>
+          <span class="menu-icon">📝</span>
           <span>系统日志</span>
         </div>
       </div>

@@ -3,11 +3,11 @@
     <h2>用户登录</h2>
     <p v-if="error" class="error">{{ error }}</p>
     <form @submit.prevent="handleLogin">
-      <div class="box">
+      <div class="form-field">
         <span>用户名或用户编号：</span>
         <input v-model="username" type="text" placeholder="请输入用户名或用户编号" required />
       </div>
-      <div class="box">
+      <div class="form-field">
         <span>密码：</span>
         <input v-model="password" type="password" placeholder="请输入密码" required />
       </div>
