@@ -572,6 +572,11 @@ button:hover {
   margin-top: 15px;
 }
 
+/* 弹窗底部按钮靠右 */
+.modal-actions {
+  justify-content: flex-end;
+}
+
 .form-actions button,
 .group-actions button {
   padding: 8px 20px;

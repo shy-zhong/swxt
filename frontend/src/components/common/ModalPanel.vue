@@ -5,7 +5,7 @@
         <slot name="title">{{ title }}</slot>
       </h3>
       <slot />
-      <div v-if="$slots.actions" class="form-actions">
+      <div v-if="$slots.actions" class="form-actions modal-actions">
         <slot name="actions" />
       </div>
     </div>
