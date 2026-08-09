@@ -20,9 +20,9 @@ public interface CartMapper {
     List<CartItemVO> listByUserId(@Param("userId") Long userId);
 
     /**
-     * 查询用户购物车总件数（角标用）
+     * 查询用户购物车商品种类数（行数，角标用）
      */
-    @Select("SELECT COALESCE(SUM(quantity), 0) FROM cart WHERE user_id = #{userId}")
+    @Select("SELECT COUNT(*) FROM cart WHERE user_id = #{userId}")
     int countByUserId(@Param("userId") Long userId);
 
     /**

@@ -21,7 +21,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public Result<Void> handleBusiness(BusinessException e) {
         log.warn("业务异常: code={}, message={}", e.getResultCode().getCode(), e.getMessage());
-        return Result.of(e.getResultCode());
+        // 使用异常携带的具体 message（如"商品已下架: xxx"），避免被枚举默认值（如"请求参数错误"）覆盖
+        return Result.error(e.getResultCode().getCode(), e.getMessage());
     }
 
 /**

@@ -32,7 +32,7 @@
           :src="normalizeImage(product.image)"
           :alt="product.name"
         />
-        <div v-else class="shop-card-img shop-card-noimg">🖼️ 无图</div>
+        <img v-else class="shop-card-img" src="/default-image.svg" alt="暂无图片" />
         <div class="shop-card-body">
           <h3 class="shop-card-name">{{ product.name }}</h3>
           <p class="shop-card-desc">{{ product.description || '暂无描述' }}</p>
@@ -51,13 +51,11 @@
 
     <Pagination :page="currentPage" :total="allProducts.length" :totalPages="totalPages" @change="goToPage" />
 
-    <div v-if="detailVisible" class="panel-overlay" @click.self="closeDetail">
-      <div class="edit-panel">
-        <h3>商品详情</h3>
+    <ModalPanel :visible="detailVisible" title="商品详情" @close="closeDetail">
         <div class="form-row form-row-image">
           <label>商品图片</label>
           <img v-if="detailProduct.image" class="form-image-preview" :src="normalizeImage(detailProduct.image)" alt="预览" />
-          <span v-else class="no-image">🖼️ 无图</span>
+          <img v-else class="form-image-preview" src="/default-image.svg" alt="暂无图片" />
         </div>
         <div class="form-row">
           <label>商品名</label>
@@ -83,18 +81,15 @@
           <label>状态</label>
           <input :value="detailProduct.status === 1 ? '启用' : '禁用'" type="text" disabled />
         </div>
-        <div class="form-actions">
+        <template #actions>
           <button class="action-btn" @click="addToCart(detailProduct)">加入购物车</button>
           <button class="action-btn buy-now" @click="openBuyPanel(detailProduct)">立即购买</button>
           <button class="cancel-btn" @click="closeDetail">关闭</button>
-        </div>
-      </div>
-    </div>
+        </template>
+    </ModalPanel>
 
     <!-- 立即购买确认面板：确认数量与收货信息后直接下单 -->
-    <div v-if="buyVisible" class="panel-overlay" @click.self="closeBuyPanel">
-      <div class="edit-panel">
-        <h3>确认订单</h3>
+    <ModalPanel :visible="buyVisible" title="确认订单" @close="closeBuyPanel">
         <div class="form-row">
           <label>商品</label>
           <input :value="buyProduct.name" type="text" disabled />
@@ -123,12 +118,11 @@
           <label>收货地址</label>
           <input v-model="buyForm.receiverAddress" type="text" placeholder="请输入收货地址" />
         </div>
-        <div class="form-actions">
+        <template #actions>
           <button class="action-btn buy-now" @click="confirmBuy">确认购买</button>
           <button class="cancel-btn" @click="closeBuyPanel">取消</button>
-        </div>
-      </div>
-    </div>
+        </template>
+    </ModalPanel>
   </div>
 </template>
 
@@ -140,6 +134,7 @@ import { getConfig } from '../../utils/configStore'
 import router from '../../route/Router'
 import Pagination from '../common/Pagination.vue'
 import SearchToolbar from '../common/SearchToolbar.vue'
+import ModalPanel from '../common/ModalPanel.vue'
 
 interface Product {
   id: number
@@ -211,7 +206,7 @@ function formatPrice(n: number): string {
 }
 
 /**
- * 读取购物车总件数（后端按登录用户统计）
+ * 读取购物车商品种类数（后端按登录用户统计）
  */
 async function refreshCartCount() {
   try {
@@ -385,7 +380,7 @@ async function searchProducts() {
 }
 
 /**
- * 触发搜索：关键字为空时回退到全量加载
+ * 关键字为空时回退到全量加载
  */
 async function handleSearch() {
   currentPage.value = 1
@@ -398,9 +393,6 @@ async function handleSearch() {
   }
 }
 
-/**
- * 重置搜索条件并重新加载全部商品
- */
 function resetSearch() {
   searchKeyword.value = ''
   isSearching.value = false
@@ -408,9 +400,6 @@ function resetSearch() {
   loadProducts()
 }
 
-/**
- * 前端分页跳页
- */
 function goToPage(target: number) {
   if (target < 1 || target > totalPages.value) return
   currentPage.value = target

@@ -3,14 +3,14 @@
   <div class="cart-page">
     <div class="page-header">
       <h2>我的购物车</h2>
-      <button class="back-btn" @click="router.push('/user/shop')">返回</button>
+      <button class="back-btn" @click="router.back">返回</button>
     </div>
 
     <div v-if="successTip" class="success-tip">{{ successTip }}</div>
     <div v-if="error" class="error">{{ error }}</div>
 
     <div v-if="cartItems.length === 0" class="empty-tip cart-empty">
-      <p>购物车是空的</p>
+      <p>空</p>
       <button class="go-shop-btn" @click="router.push('/user/shop')">去购物</button>
     </div>
 
@@ -35,7 +35,7 @@
                 :src="normalizeImage(item.image)"
                 :alt="item.name"
               />
-              <span v-else class="no-image">🖼️ 无图</span>
+              <img v-else class="product-img-thumb" src="/default-image.svg" alt="暂无图片" />
             </td>
             <td>{{ item.name }}</td>
             <td>{{ currencySymbol }}{{ formatPrice(item.price) }}</td>

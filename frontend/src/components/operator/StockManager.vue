@@ -77,9 +77,7 @@
       </table>
     </div>
 
-    <div v-if="panelVisible" class="panel-overlay" @click.self="cancelPanel">
-      <div class="edit-panel">
-        <h3>{{ operateForm.type === 'IN' ? '入库' : '出库' }}</h3>
+    <ModalPanel :visible="panelVisible" :title="operateForm.type === 'IN' ? '入库' : '出库'" @close="cancelPanel">
         <div class="form-row">
           <label>商品名</label>
           <input :value="operateForm.productName" type="text" disabled />
@@ -99,16 +97,13 @@
           <label>备注</label>
           <input v-model="operateForm.remark" type="text" placeholder="可选备注" />
         </div>
-        <div class="form-actions">
+        <template #actions>
           <button @click="confirmOperate">确认</button>
           <button class="cancel-btn" @click="cancelPanel">取消</button>
-        </div>
-      </div>
-    </div>
+        </template>
+    </ModalPanel>
 
-    <div v-if="orderDetailVisible" class="panel-overlay" @click.self="closeOrderDetail">
-      <div class="edit-panel">
-        <h3>订单详情 #{{ detailOrder?.id }}</h3>
+    <ModalPanel :visible="orderDetailVisible" :title="`订单详情 #${detailOrder?.id}`" @close="closeOrderDetail">
         <div class="form-row"><label>用户</label><input :value="detailOrder?.username" type="text" disabled /></div>
         <div class="form-row"><label>总金额</label><input :value="currencySymbol + formatPrice(detailOrder?.totalAmount || 0)" type="text" disabled /></div>
         <div class="form-row"><label>状态</label><input :value="orderStatusText(detailOrder?.status || '')" type="text" disabled /></div>
@@ -123,9 +118,8 @@
             </tr>
           </tbody>
         </table>
-        <div class="form-actions"><button class="cancel-btn" @click="closeOrderDetail">关闭</button></div>
-      </div>
-    </div>
+        <template #actions><button class="cancel-btn" @click="closeOrderDetail">关闭</button></template>
+    </ModalPanel>
 
   </div>
 </template>
@@ -139,6 +133,7 @@ import { getConfig } from '../../utils/configStore'
 import router from '../../route/Router'
 import SearchToolbar from '../common/SearchToolbar.vue'
 import Pagination from '../common/Pagination.vue'
+import ModalPanel from '../common/ModalPanel.vue'
 
 interface Product {
   id: number

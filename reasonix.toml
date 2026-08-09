@@ -8,3 +8,9 @@
 workspace_root = "."
 allow_write = ["*", "D:/zyy/oneDrive/Desktop/开发模块列表.md"]
 forbid_read = ["${HOME}/.ssh", "${HOME}/.aws"] 
+# 本机工具路径(注入环境摘要供模型直接调用;路径用正斜杠避免 TOML 转义,重启会话生效)
+[environment.tools]
+mysql = "D:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe"
+java = "D:/Program Files/Java/jdk-17/bin/java.exe"
+# 浏览器验证:本机无 Chrome,使用 Edge(browser-harness 连接 Edge 调试实例 + BU_CDP_URL)
+edge = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"

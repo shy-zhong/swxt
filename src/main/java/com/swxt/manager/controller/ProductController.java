@@ -1,5 +1,6 @@
 package com.swxt.manager.controller;
 
+import com.swxt.manager.Utils.SecurityUtil;
 import com.swxt.manager.config.Core;
 import com.swxt.manager.dto.PageResult;
 import com.swxt.manager.dto.Result;
@@ -39,6 +40,10 @@ public class ProductController {
             @RequestParam(value = "priceMax", required = false) BigDecimal priceMax,
             @RequestParam(value = "status", required = false) Integer status
     ) {
+        // 非管理员未显式指定状态时，默认只看在售商品（商城不展示已下架商品，避免加购报错）
+        if (status == null && !"ADMIN".equals(SecurityUtil.getRole())) {
+            status = 1;
+        }
         PageResult<Product> result = productService.listProductsPage(page, size, keyword, categoryId, priceMin, priceMax, status);
         return Result.success(result);
     }
@@ -63,7 +68,13 @@ public class ProductController {
             @RequestParam(value = "value") String value,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
-        PageResult<Product> result = productService.searchProductsByCondition(value, page, size);
+        PageResult<Product> result;
+        if ("ADMIN".equals(SecurityUtil.getRole())) {
+            result = productService.searchProductsByCondition(value, page, size);
+        } else {
+            // 非管理员搜索仅返回在售商品
+            result = productService.listProductsPage(page, size, value, null, null, null, 1);
+        }
         return Result.success(result);
     }
 

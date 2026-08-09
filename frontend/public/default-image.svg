@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#f8f9fa"/>
+  <rect x="52" y="40" width="96" height="70" rx="6" fill="none" stroke="#c0c4cc" stroke-width="4"/>
+  <circle cx="72" cy="60" r="6" fill="#c0c4cc"/>
+  <path d="M56 104 L80 80 L94 94 L110 78 L138 104" fill="none" stroke="#c0c4cc" stroke-width="4" stroke-linejoin="round"/>
+  <text x="100" y="142" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#c0c4cc" text-anchor="middle">暂无图片</text>
+</svg>

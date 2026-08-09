@@ -52,9 +52,7 @@
 
     <Pagination :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
 
-    <div v-if="detailVisible" class="panel-overlay" @click.self="closeDetail">
-      <div class="edit-panel">
-        <h3>订单详情 #{{ detailOrder?.id }}</h3>
+    <ModalPanel :visible="detailVisible" :title="`订单详情 #${detailOrder?.id}`" @close="closeDetail">
         <div class="form-row">
           <label>用户名</label>
           <input :value="detailOrder?.username" type="text" disabled />
@@ -100,11 +98,10 @@
             </tr>
           </tbody>
         </table>
-        <div class="form-actions">
+        <template #actions>
           <button class="cancel-btn" @click="closeDetail">关闭</button>
-        </div>
-      </div>
-    </div>
+        </template>
+    </ModalPanel>
 
   </div>
 </template>
@@ -117,6 +114,7 @@ import { getConfig } from '../../utils/configStore'
 import router from '../../route/Router'
 import SearchToolbar from '../common/SearchToolbar.vue'
 import Pagination from '../common/Pagination.vue'
+import ModalPanel from '../common/ModalPanel.vue'
 
 interface OrderItem {
   id: number

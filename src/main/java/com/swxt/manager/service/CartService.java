@@ -31,7 +31,7 @@ public class CartService {
     }
 
     /**
-     * 查询用户购物车总件数
+     * 查询用户购物车商品种类数
      */
     public int countByUserId(Long userId) {
         return cartMapper.countByUserId(userId);

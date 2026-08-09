@@ -651,12 +651,6 @@ button:hover {
   border: 1px solid var(--color-border-table);
 }
 
-.no-image {
-  display: inline-block;
-  font-size: 12px;
-  color: var(--color-text-disabled);
-  padding: 24px 4px;
-}
 
 .form-row-image {
   display: flex;
@@ -1441,8 +1435,11 @@ button:hover {
 .shop-page {
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 20px auto;
   padding: 20px;
+  background: #fff;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
 }
 
 .header-actions {
@@ -1508,16 +1505,6 @@ button:hover {
   background: var(--color-bg-light);
 }
 
-.shop-card-noimg {
-  width: 100%;
-  height: 180px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg-light);
-  color: var(--color-text-placeholder);
-  font-size: 40px;
-}
 
 .shop-card-body {
   padding: 14px 16px;
@@ -1585,8 +1572,11 @@ button:hover {
 .cart-page {
   width: 100%;
   max-width: 900px;
-  margin: 0 auto;
+  margin: 20px auto;
   padding: 20px;
+  background: #fff;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
 }
 
 .cart-empty {

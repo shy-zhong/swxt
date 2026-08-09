@@ -156,7 +156,7 @@
                             <img v-if="product.image && !imageErrorMap[product.id]" class="product-img-thumb"
                                 :src="normalizeImage(product.image)" :alt="product.name"
                                 @error="onImageError(product.id)" />
-                            <span v-else class="no-image">🖼️ 无图</span>
+                            <img v-else class="product-img-thumb" src="/default-image.svg" alt="暂无图片" />
                         </td>
                         <td>{{ product.name }}</td>
                         <td>{{ product.categoryName || product.categoryId }}</td>
