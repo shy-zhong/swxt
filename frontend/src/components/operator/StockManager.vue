@@ -52,12 +52,17 @@
     </div>
 
     <div v-if="activeTab === 'order'" class="order-stock-panel">
-      <div class="toolbar">
-        <div></div>
-        <div class="toolbar-actions">
-          <button class="toolbar-btn" @click="loadOrders">刷新订单</button>
-        </div>
-      </div>
+      <SearchToolbar v-model="searchKeyword" placeholder="搜索用户名/订单号..." @search="handleSearch">
+        <template #actions>
+          <select v-model="statusFilter" class="search-select" @change="handleFilter">
+            <option value="">全部状态</option>
+            <option value="PENDING">待出库</option>
+            <option value="COMPLETED">已出库</option>
+            <option value="CANCELLED">已退货</option>
+          </select>
+          <button class="toolbar-btn" @click="loadOrders">刷新</button>
+        </template>
+      </SearchToolbar>
       <table class="product-table">
         <thead><tr><th>订单号</th><th>用户</th><th>金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
         <tbody>
@@ -187,6 +192,7 @@ const detailOrder = ref<OrderInfo | null>(null)
 
 /** 搜索与分页 */
 const searchKeyword = ref('')
+const statusFilter = ref('')
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
@@ -252,7 +258,16 @@ async function loadProducts() {
 
 function handleSearch() {
   page.value = 1
-  loadProducts()
+  if (activeTab.value === 'order') {
+    loadOrders()
+  } else {
+    loadProducts()
+  }
+}
+
+function handleFilter() {
+  page.value = 1
+  loadOrders()
 }
 
 function goToPage(target: number) {
@@ -269,6 +284,8 @@ function switchTab(tab: 'product' | 'order') {
   activeTab.value = tab
   error.value = ''
   successMsg.value = ''
+  searchKeyword.value = ''
+  statusFilter.value = ''
   page.value = 1
   if (tab === 'order') {
     loadOrders()
@@ -326,7 +343,14 @@ async function confirmOperate() {
 async function loadOrders() {
   error.value = ''
   try {
-    const res = await get<PageResult<OrderInfo>>(`/orders?page=${page.value}&size=${size.value}`)
+    const params = [`page=${page.value}`, `size=${size.value}`]
+    if (statusFilter.value) {
+      params.push(`status=${encodeURIComponent(statusFilter.value)}`)
+    }
+    if (searchKeyword.value.trim()) {
+      params.push(`keyword=${encodeURIComponent(searchKeyword.value.trim())}`)
+    }
+    const res = await get<PageResult<OrderInfo>>(`/orders?${params.join('&')}`)
     if (res.success && res.data) {
       orders.value = res.data.list
       total.value = res.data.total
