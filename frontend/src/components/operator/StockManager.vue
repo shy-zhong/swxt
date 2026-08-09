@@ -125,8 +125,6 @@
 </template>
 
 <script setup lang="ts">
-
-
 import { ref, onMounted, computed } from 'vue'
 import { get, post } from '../../utils/request'
 import { getConfig } from '../../utils/configStore'
@@ -154,18 +152,13 @@ interface PageResult<T> {
   totalPages: number
 }
 
-const products = ref<Product[]>([])
-const error = ref('')
-const successMsg = ref('')
-
-const activeTab = ref<'product' | 'order'>('product')
-
 interface OrderItem {
   id: number
   productName: string
   price: number
   quantity: number
 }
+
 interface OrderInfo {
   id: number
   username: string
@@ -177,16 +170,28 @@ interface OrderInfo {
   createdAt: string
   items: OrderItem[]
 }
+
+/** 商品列表数据 */
+const products = ref<Product[]>([])
+const error = ref('')
+const successMsg = ref('')
+
+/** Tab 切换 */
+const activeTab = ref<'product' | 'order'>('product')
+
+/** 订单列表数据 */
 const orders = ref<OrderInfo[]>([])
 const orderDetailVisible = ref(false)
 const detailOrder = ref<OrderInfo | null>(null)
 
+/** 搜索与分页 */
 const searchKeyword = ref('')
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
 const totalPages = ref(0)
 
+/** 出入库弹窗 */
 const panelVisible = ref(false)
 const operateForm = ref<{
   productId: number
@@ -214,9 +219,16 @@ function isLowStock(stock: number): boolean {
   return getConfig('enable_stock_warning') === 'true' && stock < parseInt(getConfig('low_stock_threshold') || '50', 10)
 }
 
-/**
- * 加载商品列表：支持关键词搜索与分页
- */
+function orderStatusText(status: string): string {
+  const map: Record<string, string> = { PENDING: '待出库', COMPLETED: '已出库', CANCELLED: '已退货' }
+  return map[status] || status
+}
+
+function formatTime(time: string | undefined): string {
+  if (!time) return ''
+  return time.replace('T', ' ').substring(0, 19)
+}
+
 async function loadProducts() {
   error.value = ''
   try {
@@ -248,6 +260,14 @@ function goToPage(target: number) {
   loadProducts()
 }
 
+function switchTab(tab: 'product' | 'order') {
+  activeTab.value = tab
+  error.value = ''
+  successMsg.value = ''
+  if (tab === 'order') {
+    loadOrders()
+  }
+}
 
 function openPanel(product: Product, type: 'IN' | 'OUT') {
   operateForm.value = {
@@ -267,9 +287,7 @@ function cancelPanel() {
   error.value = ''
 }
 
-/**
- * 确认出入库
- */
+/** 确认出入库操作 */
 async function confirmOperate() {
   error.value = ''
   successMsg.value = ''
@@ -294,15 +312,6 @@ async function confirmOperate() {
     }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '网络错误'
-  }
-}
-
-function switchTab(tab: 'product' | 'order') {
-  activeTab.value = tab
-  error.value = ''
-  successMsg.value = ''
-  if (tab === 'order') {
-    loadOrders()
   }
 }
 
@@ -360,16 +369,6 @@ function showOrderDetail(order: OrderInfo) {
 function closeOrderDetail() {
   orderDetailVisible.value = false
   detailOrder.value = null
-}
-
-function orderStatusText(status: string): string {
-  const map: Record<string, string> = { PENDING: '待出库', COMPLETED: '已出库', CANCELLED: '已退货' }
-  return map[status] || status
-}
-
-function formatTime(time: string | undefined): string {
-  if (!time) return ''
-  return time.replace('T', ' ').substring(0, 19)
 }
 
 onMounted(async () => {

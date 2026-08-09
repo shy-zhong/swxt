@@ -14,6 +14,7 @@
 
 <script setup lang="ts">
 withDefaults(defineProps<{ visible: boolean; title?: string }>(), { title: '' })
+
 const emit = defineEmits<{ (e: 'close'): void }>()
 
 function close() {

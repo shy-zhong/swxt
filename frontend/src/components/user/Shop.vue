@@ -127,7 +127,6 @@
 </template>
 
 <script setup lang="ts">
-
 import { ref, onMounted, computed } from 'vue'
 import { get, post } from '../../utils/request'
 import { getConfig } from '../../utils/configStore'
@@ -156,27 +155,33 @@ interface PageResult<T> {
   totalPages: number
 }
 
-const allProducts = ref<Product[]>([])
-const searchKeyword = ref('')
-const isSearching = ref(false)
-const loading = ref(false)
-const error = ref('')
-const cartCount = ref(0)
-
-const detailVisible = ref(false)
-const detailProduct = ref<Product>({ id: 0, name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 })
-
-const buyVisible = ref(false)
-const buyProduct = ref<Product>({ id: 0, name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 })
-const buyQuantity = ref(1)
-const buyForm = ref({ receiverName: '', receiverPhone: '', receiverAddress: '' })
-
 interface UserInfo {
   realName: string
   phone: string
   email: string
 }
 
+/** 商品列表与搜索 */
+const allProducts = ref<Product[]>([])
+const searchKeyword = ref('')
+const isSearching = ref(false)
+const loading = ref(false)
+const error = ref('')
+
+/** 购物车角标 */
+const cartCount = ref(0)
+
+/** 商品详情弹窗 */
+const detailVisible = ref(false)
+const detailProduct = ref<Product>({ id: 0, name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 })
+
+/** 立即购买弹窗 */
+const buyVisible = ref(false)
+const buyProduct = ref<Product>({ id: 0, name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 })
+const buyQuantity = ref(1)
+const buyForm = ref({ receiverName: '', receiverPhone: '', receiverAddress: '' })
+
+/** 前端分页 */
 const pageSize = 12
 const currentPage = ref(1)
 
@@ -196,18 +201,71 @@ function normalizeImage(src: string): string {
   return '/' + src
 }
 
-/**
- * 保留两位小数
- */
 function formatPrice(n: number): string {
   const num = Number(n)
   if (Number.isNaN(num)) return String(n)
   return num.toFixed(2)
 }
 
-/**
- * 读取购物车商品种类数（后端按登录用户统计）
- */
+/** 加载全部商品（一次性拉取，前端分页展示） */
+async function loadProducts() {
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await get<PageResult<Product>>('/products?page=1&size=1000')
+    if (res.success && res.data?.list) {
+      allProducts.value = res.data.list
+    } else {
+      error.value = res.message || '加载商品列表失败'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '网络错误'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function searchProducts() {
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await get<PageResult<Product>>(`/products/search?value=${encodeURIComponent(searchKeyword.value)}&page=1&size=1000`)
+    if (res.success && res.data?.list) {
+      allProducts.value = res.data.list
+    } else {
+      error.value = res.message || '搜索失败'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '网络错误'
+  } finally {
+    loading.value = false
+  }
+}
+
+/** 关键字为空时回退到全量加载 */
+async function handleSearch() {
+  currentPage.value = 1
+  if (searchKeyword.value.trim() === '') {
+    isSearching.value = false
+    await loadProducts()
+  } else {
+    isSearching.value = true
+    await searchProducts()
+  }
+}
+
+function resetSearch() {
+  searchKeyword.value = ''
+  isSearching.value = false
+  currentPage.value = 1
+  loadProducts()
+}
+
+function goToPage(target: number) {
+  if (target < 1 || target > totalPages.value) return
+  currentPage.value = target
+}
+
 async function refreshCartCount() {
   try {
     const res = await get<number>('/cart/count')
@@ -237,6 +295,28 @@ async function addToCart(product: Product) {
 }
 
 /**
+ * 打开商品详情面板：先调用独立详情接口 GET /products/{id} 拉取最新数据（含分类名称），失败时回退到列表行数据
+ */
+async function showDetail(product: Product) {
+  detailProduct.value = { ...product }
+  detailVisible.value = true
+  try {
+    const res = await get<Product>(`/products/${product.id}`)
+    if (res.success && res.data) {
+      detailProduct.value = res.data
+    } else {
+      error.value = res.message || '加载详情失败'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '加载详情失败'
+  }
+}
+
+function closeDetail() {
+  detailVisible.value = false
+}
+
+/**
  * 立即购买：打开确认面板（确认数量与收货信息），不再经过购物车
  */
 async function openBuyPanel(product: Product) {
@@ -257,34 +337,23 @@ async function openBuyPanel(product: Product) {
   }
 }
 
-/**
- * 关闭购买确认面板
- */
 function closeBuyPanel() {
   buyVisible.value = false
 }
 
-/**
- * 购买数量 +1（不超过库存）
- */
 function increaseBuyQty() {
   if (buyQuantity.value < buyProduct.value.stock) {
     buyQuantity.value += 1
   }
 }
 
-/**
- * 购买数量 -1（不小于 1）
- */
 function decreaseBuyQty() {
   if (buyQuantity.value > 1) {
     buyQuantity.value -= 1
   }
 }
 
-/**
- * 确认购买：校验数量与收货信息后直接调用 POST /orders 下单，成功后跳转我的订单页
- */
+/** 确认购买：校验数量与收货信息后直接调用 POST /orders 下单，成功后跳转我的订单页 */
 async function confirmBuy() {
   if (buyQuantity.value < 1 || buyQuantity.value > buyProduct.value.stock) {
     error.value = '购买数量超出库存范围'
@@ -312,97 +381,6 @@ async function confirmBuy() {
   } catch (e) {
     error.value = e instanceof Error ? e.message : '下单失败，请稍后重试'
   }
-}
-
-/**
- * 打开商品详情面板：先调用独立详情接口 GET /products/{id} 拉取最新数据（含分类名称），失败时回退到列表行数据
- */
-async function showDetail(product: Product) {
-  detailProduct.value = { ...product }
-  detailVisible.value = true
-  try {
-    const res = await get<Product>(`/products/${product.id}`)
-    if (res.success && res.data) {
-      detailProduct.value = res.data
-    } else {
-      error.value = res.message || '加载详情失败'
-    }
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '加载详情失败'
-  }
-}
-
-/**
- * 关闭商品详情面板
- */
-function closeDetail() {
-  detailVisible.value = false
-}
-
-/**
- * 加载全部商品（一次性拉取，前端分页展示）
- */
-async function loadProducts() {
-  loading.value = true
-  error.value = ''
-  try {
-    const res = await get<PageResult<Product>>('/products?page=1&size=1000')
-    if (res.success && res.data?.list) {
-      allProducts.value = res.data.list
-    } else {
-      error.value = res.message || '加载商品列表失败'
-    }
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '网络错误'
-  } finally {
-    loading.value = false
-  }
-}
-
-/**
- * 按商品名搜索
- */
-async function searchProducts() {
-  loading.value = true
-  error.value = ''
-  try {
-    const res = await get<PageResult<Product>>(`/products/search?value=${encodeURIComponent(searchKeyword.value)}&page=1&size=1000`)
-    if (res.success && res.data?.list) {
-      allProducts.value = res.data.list
-    } else {
-      error.value = res.message || '搜索失败'
-    }
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '网络错误'
-  } finally {
-    loading.value = false
-  }
-}
-
-/**
- * 关键字为空时回退到全量加载
- */
-async function handleSearch() {
-  currentPage.value = 1
-  if (searchKeyword.value.trim() === '') {
-    isSearching.value = false
-    await loadProducts()
-  } else {
-    isSearching.value = true
-    await searchProducts()
-  }
-}
-
-function resetSearch() {
-  searchKeyword.value = ''
-  isSearching.value = false
-  currentPage.value = 1
-  loadProducts()
-}
-
-function goToPage(target: number) {
-  if (target < 1 || target > totalPages.value) return
-  currentPage.value = target
 }
 
 onMounted(() => {

@@ -86,9 +86,6 @@
 </template>
 
 <script setup lang="ts">
-
-
-
 import { ref, onMounted } from 'vue'
 import { get, del } from '../../utils/request'
 import { getConfig } from '../../utils/configStore'
@@ -115,6 +112,7 @@ interface PageResult<T> {
   totalPages: number
 }
 
+/** 筛选下拉选项 */
 const actionTypeOptions: { value: string; label: string }[] = [
   { value: 'CREATE', label: '新增' },
   { value: 'UPDATE', label: '修改' },
@@ -137,38 +135,34 @@ const resultOptions: { value: string; label: string }[] = [
   { value: 'FAIL', label: '失败' },
 ]
 
+/** 枚举映射（用于显示标签） */
 const actionLabelMap = new Map(actionTypeOptions.map((t) => [t.value, t.label]))
 const targetLabelMap = new Map(targetTypeOptions.map((t) => [t.value, t.label]))
 
+/** 列表数据 */
 const logs = ref<SystemLog[]>([])
 const error = ref('')
+
+/** 筛选条件 */
 const filterUsername = ref('')
 const filterActionType = ref('')
 const filterTargetType = ref('')
 const filterResult = ref('')
 
+/** 分页 */
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
 const totalPages = ref(0)
 
-/**
- * 将操作类型枚举转换为展示名称
- */
 function actionTypeLabel(t: string): string {
   return actionLabelMap.get(t) || t || '-'
 }
 
-/**
- * 将操作对象枚举转换为展示名称
- */
 function targetTypeLabel(t: string): string {
   return targetLabelMap.get(t) || t || '-'
 }
 
-/**
- * 加载日志列表：带当前筛选条件与分页参数请求后端
- */
 async function loadLogs() {
   error.value = ''
   try {
@@ -195,17 +189,11 @@ async function loadLogs() {
   }
 }
 
-/**
- * 应用筛选条件并重置到第一页
- */
 function applyFilter() {
   page.value = 1
   loadLogs()
 }
 
-/**
- * 重置全部筛选条件并回到第一页
- */
 function resetFilter() {
   filterUsername.value = ''
   filterActionType.value = ''
@@ -215,22 +203,12 @@ function resetFilter() {
   loadLogs()
 }
 
-/**
- * 跳转到指定页码并重新加载
- */
 function goToPage(target: number) {
   if (target < 1 || (totalPages.value > 0 && target > totalPages.value)) return
   page.value = target
   loadLogs()
 }
 
-onMounted(async () => {
-  await loadLogs()
-})
-
-/**
- * 清空日志
- */
 async function logClear() {
   if (!confirm('确认清空所有日志?')) return
   try {
@@ -245,4 +223,8 @@ async function logClear() {
     error.value = e instanceof Error ? e.message : '网络错误'
   }
 }
+
+onMounted(async () => {
+  await loadLogs()
+})
 </script>

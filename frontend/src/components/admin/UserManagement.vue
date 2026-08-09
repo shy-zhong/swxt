@@ -7,8 +7,8 @@
     </div>
 
     <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="isCreating" class="edit-panel">
-      <h3>新增用户</h3>
+
+    <ModalPanel :visible="isCreating" title="新增用户" @close="cancelCreate">
       <div class="form-row">
         <label>用户名</label>
         <input v-model="createForm.username" type="text" />
@@ -46,14 +46,13 @@
           </label>
         </div>
       </div>
-      <div class="form-actions">
+      <template #actions>
         <button @click="createNewUser">确认新增</button>
         <button class="cancel-btn" @click="cancelCreate">取消</button>
-      </div>
-    </div>
+      </template>
+    </ModalPanel>
 
-    <div v-else-if="editing" class="edit-panel">
-      <h3>编辑用户</h3>
+    <ModalPanel :visible="editing" title="编辑用户" @close="cancelEdit">
       <div class="form-row">
         <label>用户名</label>
         <input v-model="editForm.username" type="text" />
@@ -77,13 +76,13 @@
           <option value="ADMIN">ADMIN</option>
         </select>
       </div>
-      <div class="form-actions">
+      <template #actions>
         <button @click="saveEdit">保存</button>
         <button class="cancel-btn" @click="cancelEdit">取消</button>
-      </div>
-    </div>
+      </template>
+    </ModalPanel>
 
-    <SearchToolbar v-else v-model="searchKeyword" placeholder="请输入搜索内容..." @search="handleSearch">
+    <SearchToolbar v-model="searchKeyword" placeholder="请输入搜索内容..." @search="handleSearch">
       <template #prepend>
         <select v-model="searchMethod">
           <option value="">全部</option>
@@ -100,7 +99,7 @@
       </template>
     </SearchToolbar>
 
-    <div class="table-wrap" v-if="!isCreating && !editing">
+    <div class="table-wrap">
       <table class="user-table">
         <thead>
           <tr>
@@ -130,20 +129,18 @@
       </table>
     </div>
 
-    <Pagination v-if="!isCreating && !editing" :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
+    <Pagination :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
   </div>
 </template>
 
 <script setup lang="ts">
-
-
-
 import { ref, onMounted } from 'vue'
 import { get, post, put, del } from '../../utils/request'
 import router from '../../route/Router'
 import { getConfig } from '../../utils/configStore'
 import Pagination from '../common/Pagination.vue'
 import SearchToolbar from '../common/SearchToolbar.vue'
+import ModalPanel from '../common/ModalPanel.vue'
 
 interface User {
   id: number
@@ -156,27 +153,6 @@ interface User {
   status?: number
 }
 
-const users = ref<User[]>([])
-const error = ref('')
-const searchKeyword = ref('')
-const searchMethod = ref('')
-const editing = ref(false)
-const editForm = ref<User>({ id: 0, username: '', realName: '', phone: '', email: '', role: 'USER', wechatOpenid: '', status: 1 })
-const isCreating = ref<boolean>(false)
-const createForm = ref<{ username: string; password: string; realName: string; phone: string; email: string; role: string }>({
-  username: '',
-  password: '',
-  realName: '',
-  phone: '',
-  email: '',
-  role: 'USER',
-})
-
-const page = ref(1)
-const total = ref(0)
-const totalPages = ref(0)
-const isSearching = ref(false)
-
 interface PageResult<T> {
   list: T[]
   total: number
@@ -185,70 +161,31 @@ interface PageResult<T> {
   totalPages: number
 }
 
-/**
- * 打开新增用户表单并重置默认值
- */
-function openCreate() {
-  createForm.value = { username: '', password: '', realName: '', phone: '', email: '', role: 'USER' }
-  error.value = ''
-  isCreating.value = true
-}
+/** 列表数据 */
+const users = ref<User[]>([])
+const error = ref('')
+const searchKeyword = ref('')
+const searchMethod = ref('')
 
-/**
- * 取消新增，关闭表单
- */
-function cancelCreate() {
-  isCreating.value = false
-  error.value = ''
-}
-
-/**
- * 按当前搜索状态加载数据：搜索中调 searchUsers，否则调 loadUsers
- */
-async function loadData() {
-  if (isSearching.value) {
-    await searchUsers()
-  } else {
-    await loadUsers()
-  }
-}
-
-/**
- * 按搜索条件调用 /users/search 接口查询用户并刷新列表
- */
-async function searchUsers() {
-  error.value = ''
-  try {
-    const res = await get<PageResult<User>>(`/users/search?key=${searchMethod.value}&value=${searchKeyword.value}&page=${page.value}&size=${getConfig('page_size')}`)
-    if (res.success) {
-      users.value = res.data.list
-      total.value = res.data.total
-      totalPages.value = res.data.totalPages
-      page.value = res.data.page
-    } else {
-      error.value = res.message || '搜索失败'
-    }
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '错误'
-  }
-}
-
-/**
- * 设置搜索状态并重置到第一页后加载数据
- */
-async function handleSearch() {
-  page.value = 1
-  isSearching.value = searchMethod.value !== ''
-  await loadData()
-}
-
-onMounted(async () => {
-  await loadUsers()
+/** 新增/编辑表单 */
+const createForm = ref<{ username: string; password: string; realName: string; phone: string; email: string; role: string }>({
+  username: '',
+  password: '',
+  realName: '',
+  phone: '',
+  email: '',
+  role: 'USER',
 })
+const editForm = ref<User>({ id: 0, username: '', realName: '', phone: '', email: '', role: 'USER', wechatOpenid: '', status: 1 })
+const isCreating = ref<boolean>(false)
+const editing = ref(false)
 
-/**
- * 加载用户分页列表
- */
+/** 分页 */
+const page = ref(1)
+const total = ref(0)
+const totalPages = ref(0)
+const isSearching = ref(false)
+
 async function loadUsers() {
   console.log(getConfig('page_size'))
   error.value = ''
@@ -267,34 +204,66 @@ async function loadUsers() {
   }
 }
 
-/**
- * 跳转到指定页码并重新加载
- */
+async function searchUsers() {
+  error.value = ''
+  try {
+    const res = await get<PageResult<User>>(`/users/search?key=${searchMethod.value}&value=${searchKeyword.value}&page=${page.value}&size=${getConfig('page_size')}`)
+    if (res.success) {
+      users.value = res.data.list
+      total.value = res.data.total
+      totalPages.value = res.data.totalPages
+      page.value = res.data.page
+    } else {
+      error.value = res.message || '搜索失败'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '错误'
+  }
+}
+
+async function loadData() {
+  if (isSearching.value) {
+    await searchUsers()
+  } else {
+    await loadUsers()
+  }
+}
+
+async function handleSearch() {
+  page.value = 1
+  isSearching.value = searchMethod.value !== ''
+  await loadData()
+}
+
 function goToPage(target: number) {
   if (target < 1 || (totalPages.value > 0 && target > totalPages.value)) return
   page.value = target
   loadData()
 }
 
-/**
- * 打开编辑表单并回填用户信息
- */
+function openCreate() {
+  createForm.value = { username: '', password: '', realName: '', phone: '', email: '', role: 'USER' }
+  error.value = ''
+  editing.value = false
+  isCreating.value = true
+}
+
+function cancelCreate() {
+  isCreating.value = false
+  error.value = ''
+}
+
 function editUser(user: User) {
   editForm.value = { ...user }
+  isCreating.value = false
   editing.value = true
 }
 
-/**
- * 取消编辑，关闭表单
- */
 function cancelEdit() {
   editing.value = false
   error.value = ''
 }
 
-/**
- * 新增用户：调用注册接口创建
- */
 async function createNewUser() {
   error.value = ''
   try {
@@ -318,9 +287,6 @@ async function createNewUser() {
   }
 }
 
-/**
- * 保存用户编辑（含角色权限修改）
- */
 async function saveEdit() {
   error.value = ''
   try {
@@ -346,9 +312,6 @@ async function saveEdit() {
   }
 }
 
-/**
- * 删除用户:删除当前页最后一条时自动回退页码
- */
 async function deleteUser(user: User) {
   if (!confirm(`确定删除用户 ${user.username} 吗？`)) return
   error.value = ''
@@ -366,4 +329,8 @@ async function deleteUser(user: User) {
     error.value = e instanceof Error ? e.message : '网络错误'
   }
 }
+
+onMounted(async () => {
+  await loadUsers()
+})
 </script>

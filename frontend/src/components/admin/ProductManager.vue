@@ -12,8 +12,7 @@
         </div>
 
         <div v-if="error" class="error">{{ error }}</div>
-        <div v-if="activeTab === 'product' && isCreating" class="edit-panel">
-            <h3>新增商品</h3>
+        <ModalPanel :visible="isCreating" title="新增商品" @close="cancelCreate">
             <div class="form-row form-row-image">
                 <label>商品图片</label>
                 <input type="file" accept="image/png,image/jpeg,image/gif,image/webp"
@@ -48,14 +47,13 @@
                     <option :value="0">禁用</option>
                 </select>
             </div>
-            <div class="form-actions">
+            <template #actions>
                 <button @click="createNewProduct">确认新增</button>
                 <button class="cancel-btn" @click="cancelCreate">取消</button>
-            </div>
-        </div>
+            </template>
+        </ModalPanel>
 
-        <div v-else-if="showing" class="edit-panel">
-            <h3>商品详情</h3>
+        <ModalPanel :visible="showing" :title="editing ? '编辑商品' : '商品详情'" @close="cancelEdit">
             <div class="form-row form-row-image">
                 <label>商品图片</label>
                 <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" :disabled="!editing"
@@ -89,24 +87,24 @@
                     <option :value="0">禁用</option>
                 </select>
             </div>
-            <div class="form-actions">
+            <template #actions>
                 <button v-if="editing" @click="saveEdit">保存</button>
                 <button v-if="!editing" @click="editing = !editing">编辑</button>
                 <button class="cancel-btn" @click="cancelEdit">取消</button>
-            </div>
-        </div>
+            </template>
+        </ModalPanel>
 
         <template v-if="activeTab === 'category'">
             <component :is="CategoryManager" @close="activeTab = 'product'" />
         </template>
 
-        <SearchToolbar v-if="activeTab === 'product' && !isCreating && !showing" v-model="searchKeyword" placeholder="搜索商品名..." @search="handleSearch">
+        <SearchToolbar v-if="activeTab === 'product'" v-model="searchKeyword" placeholder="搜索商品名..." @search="handleSearch">
             <template #actions>
                 <button class="toolbar-btn" @click="openCreate">新增商品</button>
             </template>
         </SearchToolbar>
 
-        <div class="filter-bar" v-if="activeTab === 'product' && !isCreating && !showing">
+        <div class="filter-bar" v-if="activeTab === 'product'">
             <div class="filter-item">
                 <label>分类</label>
                 <select v-model="filterCategoryId">
@@ -134,7 +132,7 @@
             </div>
         </div>
 
-        <div class="table-wrap" v-if="activeTab === 'product' && !isCreating && !showing">
+        <div class="table-wrap" v-if="activeTab === 'product'">
             <table class="product-table">
                 <thead>
                     <tr>
@@ -172,7 +170,7 @@
             </table>
         </div>
 
-        <Pagination v-if="activeTab === 'product' && !isCreating && !showing" :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
+        <Pagination v-if="activeTab === 'product'" :page="page" :total="total" :totalPages="totalPages" @change="goToPage" />
 
 
         <div v-if="stockAlertVisible" class="stock-alert-overlay" @click.self="stockAlertVisible = false">
@@ -192,7 +190,6 @@
 </template>
 
 <script setup lang="ts">
-
 import { ref, onMounted } from 'vue'
 import { get, post, put, del, upload } from '../../utils/request'
 import { configStore, getConfig } from '../../utils/configStore'
@@ -200,8 +197,7 @@ import router from '../../route/Router'
 import CategoryManager from './CategoryManager.vue'
 import Pagination from '../common/Pagination.vue'
 import SearchToolbar from '../common/SearchToolbar.vue'
-
-const error = ref('')
+import ModalPanel from '../common/ModalPanel.vue'
 
 interface Product {
     id: number
@@ -215,18 +211,47 @@ interface Product {
     status: number
 }
 
+interface PageResult<T> {
+    list: T[]
+    total: number
+    page: number
+    size: number
+    totalPages: number
+}
+
+interface LowStockItem {
+    id: number
+    name: string
+    stock: number
+}
+
+/** 列表数据 */
 const products = ref<Product[]>([])
+const error = ref('')
 const searchKeyword = ref('')
 const imageErrorMap = ref<Record<number, boolean>>({})
 
 /** 分类下拉数据 */
 const categories = ref<{ id: number; name: string }[]>([])
+
 /** 筛选条件：分类 ID（0=全部）、价格区间（null=不限）、状态（-1=全部） */
 const filterCategoryId = ref(0)
 const filterPriceMin = ref<number | null>(null)
 const filterPriceMax = ref<number | null>(null)
 const filterStatus = ref(-1)
 
+/** 新增表单 */
+const createForm = ref<{ name: string; categoryId: number; price: number; image: string; description: string; stock: number; status: number }>({
+    name: '',
+    categoryId: 0,
+    price: 0,
+    image: '',
+    description: '',
+    stock: 0,
+    status: 1,
+})
+
+/** 编辑/详情表单 */
 const editForm = ref<Product>({
     id: 0,
     name: '',
@@ -242,33 +267,18 @@ const editing = ref(false)
 const isCreating = ref<boolean>(false)
 const activeTab = ref<'product' | 'category'>('product')
 
-const createForm = ref<{ name: string; categoryId: number; price: number; image: string; description: string; stock: number; status: number }>({
-    name: '',
-    categoryId: 0,
-    price: 0,
-    image: '',
-    description: '',
-    stock: 0,
-    status: 1,
-})
-
+/** 分页 */
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
 const totalPages = ref(0)
 const isSearching = ref(false)
 
-interface PageResult<T> {
-    list: T[]
-    total: number
-    page: number
-    size: number
-    totalPages: number
-}
+/** 库存预警 */
+const stockAlertVisible = ref(false)
+const lowStockItems = ref<LowStockItem[]>([])
+const alertThreshold = ref(0)
 
-/**
- * 图片地址规范化：绝对 URL 原样返回，其余补上前导 /
- */
 function normalizeImage(src: string): string {
     if (!src) return ''
     if (/^https?:/i.test(src)) return src
@@ -276,94 +286,46 @@ function normalizeImage(src: string): string {
     return '/' + src
 }
 
-/**
- * 图片加载失败时记录，切换为占位提示
- */
 function onImageError(id: number) {
     imageErrorMap.value[id] = true
 }
 
-/**
- * 价格格式化：保留两位小数
- */
 function formatPrice(n: number): string {
     const num = Number(n)
     if (Number.isNaN(num)) return String(n)
     return num.toFixed(2)
 }
 
-/**
- * 图片上传：FormData 发送到 /upload，成功后写入对应表单的 image 字段
- */
-async function handleImageUpload(e: Event, target: 'create' | 'edit') {
-    const input = e.target as HTMLInputElement
-    const file = input.files?.[0]
-    if (!file) return
-
-    try {
-        const formData = new FormData()
-        formData.append('file', file)
-        const res = await upload<string>('/upload', formData)
-        if (res.success && res.data) {
-            if (target === 'create') {
-                createForm.value.image = res.data
-            } else {
-                editForm.value.image = res.data
-            }
-        } else {
-            error.value = res.message || '图片上传失败'
-        }
-    } catch (err) {
-        error.value = err instanceof Error ? err.message : '网络错误'
-    }
-    input.value = ''
-}
-
-/**
- * 判断是否为低库存（依据库存预警开关与阈值配置）
- */
 function isLowStock(stock: number): boolean {
     return getConfig('enable_stock_warning') === 'true' && stock < parseInt(getConfig('low_stock_threshold') || '50', 10)
 }
 
-
-interface LowStockItem {
-    id: number
-    name: string
-    stock: number
-}
-const stockAlertVisible = ref(false)
-const lowStockItems = ref<LowStockItem[]>([])
-const alertThreshold = ref(0)
-
-/**
- * 检查低库存商品并按预警阈值过滤，有则弹出预警
- */
-async function checkLowStock() {
-    if (getConfig('enable_stock_warning') !== 'true') return
-    alertThreshold.value = parseInt(getConfig('low_stock_threshold') || '50', 10)
+async function loadProducts() {
+    error.value = ''
     try {
-        const res = await get<PageResult<Product>>(`/products?page=1&size=1000`)
-        if (res.success && res.data?.list) {
-            lowStockItems.value = res.data.list.filter(p => p.stock < alertThreshold.value)
-            if (lowStockItems.value.length > 0) {
-                stockAlertVisible.value = true
-            }
+        const res = await get<PageResult<Product>>(`/products?page=${page.value}&size=${size.value}`)
+        if (res.success) {
+            products.value = res.data.list
+            total.value = res.data.total
+            totalPages.value = res.data.totalPages
+            page.value = res.data.page
+        } else {
+            error.value = res.message || '加载商品列表失败'
         }
-    } catch {
-
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : '网络错误'
     }
 }
 
-function openCreate() {
-    createForm.value = { name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 }
-    error.value = ''
-    isCreating.value = true
-}
-
-function cancelCreate() {
-    isCreating.value = false
-    error.value = ''
+async function loadCategories() {
+    try {
+        const res = await get<{ id: number; name: string }[]>('/categories')
+        if (res.success && Array.isArray(res.data)) {
+            categories.value = res.data
+        }
+    } catch {
+        // 分类加载失败不阻塞商品列表
+    }
 }
 
 async function loadData() {
@@ -422,9 +384,6 @@ async function handleSearch() {
     await loadData()
 }
 
-/**
- * 重置全部筛选条件并重新加载
- */
 function resetFilters() {
     searchKeyword.value = ''
     filterCategoryId.value = 0
@@ -437,39 +396,21 @@ function resetFilters() {
 }
 
 /**
- * 加载分类下拉数据（登录用户可查列表）
+ * 检查低库存商品并按预警阈值过滤，有则弹出预警
  */
-async function loadCategories() {
+async function checkLowStock() {
+    if (getConfig('enable_stock_warning') !== 'true') return
+    alertThreshold.value = parseInt(getConfig('low_stock_threshold') || '50', 10)
     try {
-        const res = await get<{ id: number; name: string }[]>('/categories')
-        if (res.success && Array.isArray(res.data)) {
-            categories.value = res.data
+        const res = await get<PageResult<Product>>(`/products?page=1&size=1000`)
+        if (res.success && res.data?.list) {
+            lowStockItems.value = res.data.list.filter(p => p.stock < alertThreshold.value)
+            if (lowStockItems.value.length > 0) {
+                stockAlertVisible.value = true
+            }
         }
     } catch {
-        // 分类加载失败不阻塞商品列表
-    }
-}
 
-onMounted(async () => {
-    await loadProducts()
-    checkLowStock()
-    loadCategories()
-})
-
-async function loadProducts() {
-    error.value = ''
-    try {
-        const res = await get<PageResult<Product>>(`/products?page=${page.value}&size=${size.value}`)
-        if (res.success) {
-            products.value = res.data.list
-            total.value = res.data.total
-            totalPages.value = res.data.totalPages
-            page.value = res.data.page
-        } else {
-            error.value = res.message || '加载商品列表失败'
-        }
-    } catch (e) {
-        error.value = e instanceof Error ? e.message : '网络错误'
     }
 }
 
@@ -479,15 +420,15 @@ function goToPage(target: number) {
     loadData()
 }
 
-function showProduct(product: Product) {
-    editForm.value = { ...product }
-    editing.value = false
-    showing.value = true
+function openCreate() {
+    createForm.value = { name: '', categoryId: 0, price: 0, image: '', description: '', stock: 0, status: 1 }
+    error.value = ''
+    showing.value = false
+    isCreating.value = true
 }
 
-function cancelEdit() {
-    showing.value = false
-    editing.value = false
+function cancelCreate() {
+    isCreating.value = false
     error.value = ''
 }
 
@@ -513,6 +454,46 @@ async function createNewProduct() {
     } catch (e) {
         error.value = e instanceof Error ? e.message : '网络错误'
     }
+}
+
+/**
+ * 图片上传：FormData 发送到 /upload，成功后写入对应表单的 image 字段
+ */
+async function handleImageUpload(e: Event, target: 'create' | 'edit') {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await upload<string>('/upload', formData)
+        if (res.success && res.data) {
+            if (target === 'create') {
+                createForm.value.image = res.data
+            } else {
+                editForm.value.image = res.data
+            }
+        } else {
+            error.value = res.message || '图片上传失败'
+        }
+    } catch (err) {
+        error.value = err instanceof Error ? err.message : '网络错误'
+    }
+    input.value = ''
+}
+
+function showProduct(product: Product) {
+    editForm.value = { ...product }
+    editing.value = false
+    isCreating.value = false
+    showing.value = true
+}
+
+function cancelEdit() {
+    showing.value = false
+    editing.value = false
+    error.value = ''
 }
 
 async function saveEdit() {
@@ -558,4 +539,10 @@ async function deleteProduct(product: Product) {
         error.value = e instanceof Error ? e.message : '网络错误'
     }
 }
+
+onMounted(async () => {
+    await loadProducts()
+    checkLowStock()
+    loadCategories()
+})
 </script>

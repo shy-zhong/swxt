@@ -90,6 +90,7 @@ const props = withDefaults(defineProps<{
     readonly: false
 })
 
+/** 配置项分组映射 */
 const CATEGORY_MAP: Record<string, { title: string; type: 'text' | 'number' | 'switch' | 'image' }> = {
     site_name: { title: '站点信息', type: 'text' },
     site_description: { title: '站点信息', type: 'text' },
@@ -107,6 +108,7 @@ const CATEGORY_MAP: Record<string, { title: string; type: 'text' | 'number' | 's
     default_product_status: { title: '商品设置', type: 'text' },
 }
 
+/** 分组与状态 */
 const groups = ref<SettingsGroup[]>([
     { title: '站点信息', icon: '🌐', items: [] },
     { title: '安全设置', icon: '🔒', items: [] },
@@ -117,12 +119,10 @@ const groups = ref<SettingsGroup[]>([
 const activeGroup = ref<string>(groups.value[0].title)
 const error = ref('')
 const successMsg = ref('')
+
 /** 待上传的图片文件：key 为配置项 id，保存时才上传，避免放弃修改产生孤儿文件 */
 const pendingFiles: Record<number, File> = {}
 
-/**
- * 图片路径规范化：非http开头则加斜杠
- */
 function normalizeImage(src: string): string {
     if (!src) return ''
     if (/^https?:/i.test(src) || /^blob:/i.test(src)) return src

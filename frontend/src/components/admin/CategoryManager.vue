@@ -44,8 +44,7 @@
             </div>
         </div>
 
-        <div v-if="categoryEditing" class="sub-panel">
-            <h4 class="panel-title">{{ categoryForm.id ? '编辑分类' : '新增分类' }}</h4>
+        <ModalPanel :visible="categoryEditing" :title="categoryForm.id ? '编辑分类' : '新增分类'" @close="categoryEditing = false">
             <div class="form-row">
                 <label>分类名称</label>
                 <input v-model="categoryForm.name" type="text" />
@@ -62,11 +61,11 @@
                 <label>排序号</label>
                 <input v-model.number="categoryForm.sortOrder" type="number" />
             </div>
-            <div class="form-actions">
+            <template #actions>
                 <button @click="saveCategory">确认</button>
                 <button class="cancel-btn" @click="categoryEditing = false">取消</button>
-            </div>
-        </div>
+            </template>
+        </ModalPanel>
 
         <div class="form-actions panel-actions">
             <button @click="openCategoryCreate">新增父分类</button>
@@ -77,6 +76,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { get, post, put, del } from '../../utils/request'
+import ModalPanel from '../common/ModalPanel.vue'
 
 interface Category {
     id: number
@@ -89,8 +89,11 @@ const emit = defineEmits<{
     (e: 'close'): void
 }>()
 
-const error = ref('')
+/** 列表数据 */
 const categories = ref<Category[]>([])
+const error = ref('')
+
+/** 表单状态 */
 const categoryEditing = ref(false)
 const expandedParent = ref<number | null>(null)
 const categoryForm = ref<{ id?: number; name: string; parentId: number; sortOrder: number }>({
@@ -99,6 +102,7 @@ const categoryForm = ref<{ id?: number; name: string; parentId: number; sortOrde
     sortOrder: 0,
 })
 
+/** 父分类列表（按排序号升序） */
 const parentCategories = computed(() =>
     categories.value.filter(c => c.parentId === 0).sort((a, b) => a.sortOrder - b.sortOrder)
 )
@@ -111,12 +115,6 @@ function toggleParent(id: number) {
     expandedParent.value = expandedParent.value === id ? null : id
 }
 
-function openSubCategoryCreate(parentId: number) {
-    categoryEditing.value = true
-    categoryForm.value = { name: '', parentId, sortOrder: 0 }
-}
-
-/** 加载全部分类 */
 async function loadCategories() {
     error.value = ''
     try {
@@ -136,12 +134,16 @@ function openCategoryCreate() {
     categoryEditing.value = true
 }
 
+function openSubCategoryCreate(parentId: number) {
+    categoryEditing.value = true
+    categoryForm.value = { name: '', parentId, sortOrder: 0 }
+}
+
 function openCategoryEdit(category: Category) {
     categoryForm.value = { id: category.id, name: category.name, parentId: category.parentId, sortOrder: category.sortOrder }
     categoryEditing.value = true
 }
 
-/** 保存分类 */
 async function saveCategory() {
     error.value = ''
     try {
@@ -174,7 +176,6 @@ async function saveCategory() {
     }
 }
 
-/** 删除分类 */
 async function deleteCategory(category: Category) {
     if (!confirm(`确定删除分类 ${category.name} 吗？`)) return
     error.value = ''

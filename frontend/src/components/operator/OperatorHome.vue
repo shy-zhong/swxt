@@ -28,11 +28,11 @@
 </template>
 
 <script setup lang="ts">
-
-
 import { ref, onMounted } from 'vue'
 import router from '../../route/Router'
 import { get } from '../../utils/request'
+
+/** 当前登录用户名 */
 const username = ref<string>('')
 
 onMounted(() => {
@@ -42,9 +42,6 @@ onMounted(() => {
   }
 })
 
-/**
- * 退出登录：通知后端登出并清除本地 token/role/username，跳转登录页
- */
 async function exit() {
   try {
     await get('/login-out');

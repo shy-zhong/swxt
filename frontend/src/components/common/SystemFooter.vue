@@ -12,11 +12,10 @@
 
 
 <script setup lang="ts">
-
-
 import { computed } from 'vue'
 import { configStore } from '../../utils/configStore'
 
+/** 站点信息 */
 const siteDescription = computed(() => configStore.configs['site_description'] ?? '')
 const contactPhone = computed(() => configStore.configs['contact_phone'] ?? '')
 const contactEmail = computed(() => configStore.configs['contact_email'] ?? '')

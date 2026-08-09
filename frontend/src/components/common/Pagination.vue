@@ -15,16 +15,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+/** 分页参数 */
 const props = defineProps<{
     page: number
     total: number
     totalPages: number
 }>()
 
+/** 翻页事件 */
 defineEmits<{
     (e: 'change', target: number): void
 }>()
 
+/** 页码列表（含省略号） */
 const pageItems = computed<(number | string)[]>(() => {
     const pages = Array.from(new Set([1, props.page - 2 , props.page -1, props.page, props.page + 1, props.page + 2 , props.totalPages]))
         .filter(p => p >= 1 && p <= props.totalPages)

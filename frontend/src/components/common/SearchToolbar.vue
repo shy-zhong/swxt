@@ -15,11 +15,13 @@
 </template>
 
 <script setup lang="ts">
+/** 搜索框参数 */
 defineProps<{
     modelValue: string
     placeholder?: string
 }>()
 
+/** 输入与搜索事件 */
 defineEmits<{
     (e: 'update:modelValue', value: string): void
     (e: 'search'): void

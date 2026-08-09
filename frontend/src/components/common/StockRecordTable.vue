@@ -65,24 +65,31 @@ interface PageResult<T> {
     totalPages: number
 }
 
+/** 列表数据 */
 const stockRecords = ref<StockRecordItem[]>([])
 const error = ref('')
 const searchKeyword = ref('')
 
+/** 分页 */
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
 const totalPages = ref(0)
 const isSearching = ref(false)
 
-/**
- * 按当前搜索状态加载数据：搜索中调 searchStockRecords，否则调 loadStockRecords
- */
-async function loadData() {
-    if (isSearching.value) {
-        await searchStockRecords()
-    } else {
-        await loadStockRecords()
+async function loadStockRecords() {
+    try {
+        const res = await get<PageResult<StockRecordItem>>(
+            `/statistics/stock-records?page=${page.value}&size=${size.value}`
+        )
+        if (res.success && res.data) {
+            stockRecords.value = res.data.list || []
+            total.value = res.data.total
+            totalPages.value = res.data.totalPages
+            page.value = res.data.page
+        }
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : '网络错误'
     }
 }
 
@@ -105,19 +112,11 @@ async function searchStockRecords() {
     }
 }
 
-async function loadStockRecords() {
-    try {
-        const res = await get<PageResult<StockRecordItem>>(
-            `/statistics/stock-records?page=${page.value}&size=${size.value}`
-        )
-        if (res.success && res.data) {
-            stockRecords.value = res.data.list || []
-            total.value = res.data.total
-            totalPages.value = res.data.totalPages
-            page.value = res.data.page
-        }
-    } catch (e) {
-        error.value = e instanceof Error ? e.message : '网络错误'
+async function loadData() {
+    if (isSearching.value) {
+        await searchStockRecords()
+    } else {
+        await loadStockRecords()
     }
 }
 
@@ -133,9 +132,6 @@ async function handleSearch() {
     await loadData()
 }
 
-/**
- * 供父组件调用：重置到第一页并重新加载记录
- */
 function refresh() {
     page.value = 1
     searchKeyword.value = ''

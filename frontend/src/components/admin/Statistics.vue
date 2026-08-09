@@ -140,9 +140,6 @@
 </template>
 
 <script setup lang="ts">
-
-
-
 import { ref, computed, onMounted } from 'vue'
 import { get } from '../../utils/request'
 import { configStore } from '../../utils/configStore'
@@ -185,7 +182,7 @@ interface StatisticsVO {
     priceRangeStats: PriceRangeStat[]
 }
 
-
+/** 图表配色 */
 const CATEGORY_COLORS = ['#667eea', '#52c41a', '#faad14', '#13c2c2', '#f5222d', '#eb2f96', '#722ed1', '#fa8c16']
 const PRICE_COLORS = ['#52c41a', '#667eea', '#faad14', '#13c2c2', '#f5222d']
 
@@ -196,15 +193,33 @@ const EMPTY_SUMMARY: Summary = {
     avgPrice: 0, maxPrice: 0, minPrice: 0,
 }
 
+/** 统计状态 */
 const summary = ref<Summary>({ ...EMPTY_SUMMARY })
 const categoryStats = ref<(CategoryStat & { color: string })[]>([])
 const priceRangeStats = ref<(PriceRangeStat & { color: string; height: number })[]>([])
 const error = ref('')
 const loading = ref(true)
 
-/**
- * 数字格式化：千分位 + 两位小数
- */
+const adminPercent = computed(() => {
+    const total = summary.value.totalUsers || 1
+    return Math.round((summary.value.adminUsers / total) * 100)
+})
+
+const normalPercent = computed(() => {
+    const total = summary.value.totalUsers || 1
+    return Math.round((summary.value.normalUsers / total) * 100)
+})
+
+const currencySymbol = computed(() => configStore.configs['currency_symbol'] || '¥')
+
+const donutStyle = computed(() => {
+    const total = summary.value.totalProducts || 1
+    const activePercent = (summary.value.activeProducts / total) * 100
+    return {
+        background: `conic-gradient(#52c41a 0% ${activePercent}%, #f5222d ${activePercent}% 100%)`,
+    }
+})
+
 function formatNum(n: number): string {
     const num = Number(n)
     if (Number.isNaN(num)) return String(n)
@@ -236,26 +251,6 @@ onMounted(async () => {
         error.value = e instanceof Error ? e.message : '网络错误'
     } finally {
         loading.value = false
-    }
-})
-
-const adminPercent = computed(() => {
-    const total = summary.value.totalUsers || 1
-    return Math.round((summary.value.adminUsers / total) * 100)
-})
-
-const currencySymbol = computed(() => configStore.configs['currency_symbol'] || '¥')
-
-const normalPercent = computed(() => {
-    const total = summary.value.totalUsers || 1
-    return Math.round((summary.value.normalUsers / total) * 100)
-})
-
-const donutStyle = computed(() => {
-    const total = summary.value.totalProducts || 1
-    const activePercent = (summary.value.activeProducts / total) * 100
-    return {
-        background: `conic-gradient(#52c41a 0% ${activePercent}%, #f5222d ${activePercent}% 100%)`,
     }
 })
 </script>

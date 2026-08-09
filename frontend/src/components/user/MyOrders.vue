@@ -100,7 +100,6 @@
 </template>
 
 <script setup lang="ts">
-
 import { ref, computed, onMounted } from 'vue'
 import { get } from '../../utils/request'
 import { getConfig } from '../../utils/configStore'
@@ -136,16 +135,19 @@ interface PageResult<T> {
   totalPages: number
 }
 
+/** 列表数据 */
 const orders = ref<OrderInfo[]>([])
 const error = ref('')
 const searchKeyword = ref('')
 const statusFilter = ref('')
 
+/** 分页 */
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
 const totalPages = ref(0)
 
+/** 详情弹窗 */
 const detailVisible = ref(false)
 const detailOrder = ref<OrderInfo | null>(null)
 
@@ -157,9 +159,6 @@ function formatPrice(n: number): string {
   return num.toFixed(2)
 }
 
-/**
- * 订单状态映射为出入库状态文案
- */
 function orderStatusText(status: string): string {
   const map: Record<string, string> = { PENDING: '待出库', COMPLETED: '已出库', CANCELLED: '已退货' }
   return map[status] || status
@@ -189,9 +188,6 @@ function buildQueryUrl(): string {
   return `/orders/my?${params.join('&')}`
 }
 
-/**
- * 加载当前用户的订单（分页，支持按状态与关键词筛选）
- */
 async function loadOrders() {
   error.value = ''
   try {

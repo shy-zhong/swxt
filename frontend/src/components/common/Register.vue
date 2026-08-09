@@ -37,14 +37,13 @@
   </div>
 </template>
 <script setup lang="ts">
-
-
-import {ref} from 'vue'
+import { ref } from 'vue'
 import { post } from '../../utils/request.ts'
 import router from '../../route/Router';
 
 type Role = "ADMIN" | "OPERATOR" | "USER";
 
+/** 表单状态 */
 const error = ref("");
 const username = ref("")
 const password = ref("");

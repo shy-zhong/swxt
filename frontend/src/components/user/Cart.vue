@@ -65,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-
 import { ref, onMounted, computed } from 'vue'
 import { getConfig } from '../../utils/configStore'
 import { get, post, put, del } from '../../utils/request'
@@ -81,6 +80,7 @@ interface CartItem {
   stock: number
 }
 
+/** 购物车列表 */
 const cartItems = ref<CartItem[]>([])
 const successTip = ref('')
 const error = ref('')
@@ -113,9 +113,6 @@ async function loadCart() {
   }
 }
 
-/**
- * 数量 +1（调后端）
- */
 async function increaseQty(id: number) {
   const item = cartItems.value.find(i => i.id === id)
   if (!item) return
@@ -127,9 +124,6 @@ async function increaseQty(id: number) {
   }
 }
 
-/**
- * 数量 -1；数量为 1 时再减则删除该行（调后端）
- */
 async function decreaseQty(id: number) {
   const item = cartItems.value.find(i => i.id === id)
   if (!item) return
@@ -145,9 +139,6 @@ async function decreaseQty(id: number) {
   }
 }
 
-/**
- * 从购物车移除指定行（调后端）
- */
 async function removeItem(id: number) {
   if (!confirm('确定从购物车移除该商品吗？')) return
   const res = await del(`/cart/${id}`)

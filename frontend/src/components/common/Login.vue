@@ -26,6 +26,8 @@ import { post } from '../../utils/request'
 
 const route = useRoute()
 const router = useRouter()
+
+/** 表单状态 */
 const username = ref(route.query.username as string || '')
 const password = ref('')
 const error = ref('')

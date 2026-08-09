@@ -28,11 +28,11 @@
 </template>
 
 <script setup lang="ts">
-
-
 import { ref, onMounted } from 'vue'
 import router from '../../route/Router'
 import { get } from '../../utils/request'
+
+/** 当前登录用户名 */
 const username = ref<string>('')
 
 onMounted(() => {
@@ -42,9 +42,6 @@ onMounted(() => {
   }
 })
 
-/**
- * 退出登录
- */
 async function exit() {
   try {
     await get('/login-out');
@@ -57,9 +54,6 @@ async function exit() {
   router.push('/login')
 }
 
-/**
- * 菜单点击：跳转到指定页面
- */
 function goTo(path: string) {
   router.push(path)
 }
