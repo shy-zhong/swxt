@@ -167,7 +167,6 @@ const error = ref('')
 const searchKeyword = ref('')
 const searchMethod = ref('')
 
-/** 新增/编辑表单 */
 const createForm = ref<{ username: string; password: string; realName: string; phone: string; email: string; role: string }>({
   username: '',
   password: '',
@@ -180,7 +179,6 @@ const editForm = ref<User>({ id: 0, username: '', realName: '', phone: '', email
 const isCreating = ref<boolean>(false)
 const editing = ref(false)
 
-/** 分页 */
 const page = ref(1)
 const total = ref(0)
 const totalPages = ref(0)
@@ -267,15 +265,7 @@ function cancelEdit() {
 async function createNewUser() {
   error.value = ''
   try {
-    const payload = {
-      username: createForm.value.username,
-      password: createForm.value.password,
-      realName: createForm.value.realName,
-      phone: createForm.value.phone,
-      email: createForm.value.email,
-      role: createForm.value.role,
-    }
-    const res = await post('/register?usermanager=admin', payload)
+    const res = await post('/register?usermanager=admin', {...createForm.value})
     if (res.success) {
       isCreating.value = false
       await loadData()
@@ -290,17 +280,7 @@ async function createNewUser() {
 async function saveEdit() {
   error.value = ''
   try {
-    const payload = {
-      id: editForm.value.id,
-      username: editForm.value.username,
-      realName: editForm.value.realName,
-      phone: editForm.value.phone,
-      email: editForm.value.email,
-      role: editForm.value.role,
-      wechatOpenid: editForm.value.wechatOpenid,
-      status: editForm.value.status,
-    }
-    const res = await put('/users', payload)
+    const res = await put('/users', {...editForm.value})
     if (res.success) {
       editing.value = false
       await loadData()

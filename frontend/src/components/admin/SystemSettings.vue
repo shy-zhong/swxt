@@ -1,5 +1,5 @@
 <template>
-    <SettingsPanel title="系统设置" backPath="/admin/home" />
+    <SettingsPanel title="系统设置"/>
 </template>
 
 <script setup lang="ts">

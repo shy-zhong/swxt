@@ -2,7 +2,7 @@
     <div class="settings-page">
         <div class="page-header">
             <h2>{{ title }}</h2>
-            <button class="back-btn" @click="router.push(backPath)">返回</button>
+            <button class="back-btn" @click="router.back">返回</button>
         </div>
 
         <div v-if="error" class="error">{{ error }}</div>
@@ -84,7 +84,6 @@ interface SettingsGroup {
 
 const props = withDefaults(defineProps<{
     title: string
-    backPath: string
     readonly?: boolean
 }>(), {
     readonly: false

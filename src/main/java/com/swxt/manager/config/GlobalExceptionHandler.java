@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
     }
 
 /**
- * 处理参数校验失败：取第一个字段错误提示
+ * 处理参数校验失败
  */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Result<Void> handleValidation(MethodArgumentNotValidException e) {
