@@ -8,7 +8,7 @@
 
     <div v-if="error" class="error">{{ error }}</div>
 
-    <SearchToolbar v-model="searchKeyword" placeholder="搜索用户名/订单号..." @search="handleSearch">
+    <SearchToolbar v-model:modelValue="searchKeyword" placeholder="搜索用户名/订单号..." @search="handleSearch">
       <template #actions>
         <select v-model="statusFilter" class="search-select" @change="handleFilter">
           <option value="">全部状态</option>
@@ -143,19 +143,16 @@ interface PageResult<T> {
   totalPages: number
 }
 
-/** 列表数据 */
 const orders = ref<OrderInfo[]>([])
 const error = ref('')
 const searchKeyword = ref('')
 const statusFilter = ref('')
 
-/** 分页 */
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
 const totalPages = ref(0)
 
-/** 详情弹窗 */
 const detailVisible = ref(false)
 const detailOrder = ref<OrderInfo | null>(null)
 

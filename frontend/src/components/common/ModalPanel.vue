@@ -1,5 +1,5 @@
 <template>
-  <div v-if="visible" class="panel-overlay" @click.self="close">
+  <div v-if="visible" class="panel-overlay" @click.self="emit('close')">
     <div class="edit-panel">
       <h3>
         <slot name="title">{{ title }}</slot>
@@ -16,8 +16,4 @@
 withDefaults(defineProps<{ visible: boolean; title?: string }>(), { title: '' })
 
 const emit = defineEmits<{ (e: 'close'): void }>()
-
-function close() {
-  emit('close')
-}
 </script>

@@ -66,7 +66,6 @@ const pathMap = computed(() => buildPathMap(categories.value))
 const parentOptions = computed(() => {
     const list = categories.value
         .map(c => ({ id: c.id, path: pathMap.value.get(c.id) || c.name }))
-        .sort((a, b) => a.path.localeCompare(b.path, 'zh'))
     if (!categoryForm.value.id) return list
     const excluded = collectDescendantIds(categories.value, categoryForm.value.id)
     return list.filter(o => !excluded.has(o.id))
@@ -105,19 +104,13 @@ async function saveCategory() {
     error.value = ''
     try {
         if (categoryForm.value.id) {
-            const res = await put<{ code: number; message: string }>('/categories', {
-                ...categoryForm.value
-            })
+            const res = await put<{ code: number; message: string }>('/categories', {...categoryForm.value})
             if (!res.success) {
                 error.value = res.message || '保存分类失败'
                 return
             }
         } else {
-            const res = await post<{ code: number; message: string }>('/categories', {
-                name: categoryForm.value.name,
-                parentId: categoryForm.value.parentId,
-                sortOrder: categoryForm.value.sortOrder,
-            })
+            const res = await post<{ code: number; message: string }>('/categories',{...categoryForm.value})
             if (!res.success) {
                 error.value = res.message || '保存分类失败'
                 return

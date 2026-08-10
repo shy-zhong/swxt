@@ -233,28 +233,23 @@ interface LowStockItem {
     stock: number
 }
 
-/** 列表数据 */
 const products = ref<Product[]>([])
 const error = ref('')
 const searchKeyword = ref('')
 const imageErrorMap = ref<Record<number, boolean>>({})
 
-/** 分类下拉数据（扁平）与层级路径映射 */
 const categories = ref<Category[]>([])
 const categoryPathMap = ref<Map<number, string>>(new Map())
 
-/** 分类下拉展示：完整层级路径，路径映射缺失时回退到名称 */
 function categoryPath(id: number): string {
     return categoryPathMap.value.get(id) || categories.value.find(c => c.id === id)?.name || ''
 }
 
-/** 筛选条件：分类 ID（0=全部）、价格区间（null=不限）、状态（-1=全部） */
 const filterCategoryId = ref(0)
 const filterPriceMin = ref<number | null>(null)
 const filterPriceMax = ref<number | null>(null)
 const filterStatus = ref(-1)
 
-/** 新增表单 */
 const createForm = ref<{ name: string; categoryId: number; price: number; image: string; description: string; stock: number; status: number }>({
     name: '',
     categoryId: 0,
@@ -265,7 +260,6 @@ const createForm = ref<{ name: string; categoryId: number; price: number; image:
     status: 1,
 })
 
-/** 编辑/详情表单 */
 const editForm = ref<Product>({
     id: 0,
     name: '',
@@ -281,14 +275,12 @@ const editing = ref(false)
 const isCreating = ref<boolean>(false)
 const activeTab = ref<'product' | 'category'>('product')
 
-/** 分页 */
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
 const totalPages = ref(0)
 const isSearching = ref(false)
 
-/** 库存预警 */
 const stockAlertVisible = ref(false)
 const lowStockItems = ref<LowStockItem[]>([])
 const alertThreshold = ref(0)
@@ -450,16 +442,7 @@ function cancelCreate() {
 async function createNewProduct() {
     error.value = ''
     try {
-        const payload = {
-            name: createForm.value.name,
-            categoryId: createForm.value.categoryId,
-            price: createForm.value.price,
-            image: createForm.value.image,
-            description: createForm.value.description,
-            stock: createForm.value.stock,
-            status: createForm.value.status,
-        }
-        const res = await post<{ code: number; message: string }>('/products', payload)
+        const res = await post<{ code: number; message: string }>('/products', {...createForm.value})
         if (res.success) {
             isCreating.value = false
             await loadData()
