@@ -45,7 +45,7 @@ public class CartService {
             throw new BusinessException(Core.ResultCode.BAD_REQUEST, "商品ID不能为空");
         }
         if (quantity == null || quantity <= 0) {
-            quantity = 1;
+            throw new BusinessException(Core.ResultCode.BAD_REQUEST, "购买数量应大于0");
         }
         Product product = userMapping.getProductById(productId);
         if (product == null) {
