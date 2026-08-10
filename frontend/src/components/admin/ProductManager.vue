@@ -275,6 +275,9 @@ const editing = ref(false)
 const isCreating = ref<boolean>(false)
 const activeTab = ref<'product' | 'category'>('product')
 
+/** 打开详情时的原图：用于判断编辑时是否换过图（换图后取消需回滚删除新图） */
+const originalEditImage = ref('')
+
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
 const total = ref(0)
@@ -434,7 +437,12 @@ function openCreate() {
     isCreating.value = true
 }
 
-function cancelCreate() {
+async function cancelCreate() {
+    // 取消创建：清理已上传但未保存的图片，避免野图片残留
+    if (createForm.value.image) {
+        await rollbackImage(createForm.value.image)
+        createForm.value.image = ''
+    }
     isCreating.value = false
     error.value = ''
 }
@@ -448,9 +456,21 @@ async function createNewProduct() {
             await loadData()
         } else {
             error.value = res.message || '新增失败'
+            // 创建失败：回滚删除刚上传的图片，避免野图片残留
+            await rollbackImage(createForm.value.image)
+            createForm.value.image = ''
         }
     } catch (e) {
         error.value = e instanceof Error ? e.message : '网络错误'
+    }
+}
+
+async function rollbackImage(imageUrl: string) {
+    if (!imageUrl) return
+    try {
+        await del(`/upload?url=${encodeURIComponent(imageUrl)}`)
+    } catch {
+        // 忽略删除失败
     }
 }
 
@@ -483,12 +503,17 @@ async function handleImageUpload(e: Event, target: 'create' | 'edit') {
 
 function showProduct(product: Product) {
     editForm.value = { ...product }
+    originalEditImage.value = product.image || ''
     editing.value = false
     isCreating.value = false
     showing.value = true
 }
 
-function cancelEdit() {
+async function cancelEdit() {
+    // 取消修改：若编辑时换过图且新图未保存，删除新图；商品仍引用原图，保留
+    if (editForm.value.image && editForm.value.image !== originalEditImage.value) {
+        await rollbackImage(editForm.value.image)
+    }
     showing.value = false
     editing.value = false
     error.value = ''
@@ -498,17 +523,7 @@ async function saveEdit() {
     error.value = ''
     editing.value = !editing.value
     try {
-        const payload = {
-            id: editForm.value.id,
-            name: editForm.value.name,
-            categoryId: editForm.value.categoryId,
-            price: editForm.value.price,
-            image: editForm.value.image,
-            description: editForm.value.description,
-            stock: editForm.value.stock,
-            status: editForm.value.status,
-        }
-        const res = await put<{ code: number; message: string }>('/products', payload)
+        const res = await put<{ code: number; message: string }>('/products', {...editForm.value})
         if (res.success) {
             showing.value = false
             await loadData()

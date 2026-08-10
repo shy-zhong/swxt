@@ -5,6 +5,7 @@ import com.swxt.manager.dto.Result;
 import com.swxt.manager.service.FileService;
 import com.swxt.manager.service.SystemLogService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,5 +36,16 @@ public class FileController {
         String url = fileService.store(file, type);
         logService.record(Core.ActionType.CREATE, Core.TargetType.PRODUCT, null, Core.LogResult.SUCCESS);
         return Result.success(url);
+    }
+
+    /**
+     * 删除已上传但未使用的图片（商品创建/编辑失败时回滚清理，避免野图片）
+     * @param url 图片访问路径，如 /uploads/product/xxx.png
+     */
+    @DeleteMapping("/upload")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteImage(@RequestParam("url") String url) {
+        fileService.deleteByUrl(url);
+        return Result.success();
     }
 }
