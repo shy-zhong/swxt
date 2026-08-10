@@ -41,3 +41,6 @@ log/
 *.log
 .preview/
 .reasonix/
+
+# 测试流程与踩坑记录(本地保留,不入库)
+TESTING-NOTES.md
