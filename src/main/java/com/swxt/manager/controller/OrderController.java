@@ -30,20 +30,22 @@ public class OrderController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('USER','OPERATOR')")
-    public Result<OrderInfo> createOrder(@RequestBody CreateOrderRequest request) {
+    public Result<OrderInfo> createOrder(
+            @RequestBody CreateOrderRequest request,
+            @RequestParam(value = "fromCart") boolean fromCart
+    ) {
         Long userId = SecurityUtil.getUserId();
         String username = SecurityUtil.getUsername();
         OrderInfo order = orderService.createOrder(userId, username, request);
-        // 下单成功后清空该用户购物车
-        cartService.clear(userId);
+        if (fromCart) cartService.clear(userId);
         return Result.success(order);
     }
 
     /**
-     * 查询当前用户的订单（分页，支持按状态与关键词筛选）
+     * 分页查询当前用户的订单
      */
     @GetMapping("/my")
-    @PreAuthorize("hasAnyRole('USER','OPERATOR')")
+    @PreAuthorize("hasRole('USER')")
     public Result<PageResult<OrderInfo>> myOrders(
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
@@ -67,7 +69,7 @@ public class OrderController {
     }
 
     /**
-     * 查询订单详情（操作员与管理员可用，避免普通用户越权查看他人订单）
+     * 查询订单详情
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")

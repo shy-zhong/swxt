@@ -148,7 +148,7 @@ async function checkout() {
 
   const items = cartItems.value.map((i) => ({ productId: i.productId, quantity: i.quantity }))
   try {
-    const res = await post<{ id: number }>('/orders', { items, remark: '购物车结算' })
+    const res = await post<{ id: number }>('/orders?fromCart=true', { items, remark: '购物车结算' })
     if (!res.success) {
       error.value = res.message || '下单失败'
       return

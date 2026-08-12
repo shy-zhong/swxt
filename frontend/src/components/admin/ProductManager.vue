@@ -157,9 +157,11 @@
                         :class="{ 'low-stock-row': isLowStock(product.stock) }">
                         <td>{{ product.id }}</td>
                         <td class="product-img-cell">
-                            <img v-if="product.image && !imageErrorMap[product.id]" class="product-img-thumb"
-                                :src="normalizeImage(product.image)" :alt="product.name"
-                                @error="onImageError(product.id)" />
+                            <img v-if="product.image && !imageErrorMap[product.id]" 
+                                class="product-img-thumb"
+                                :src="normalizeImage(product.image)" 
+                                :alt="product.name"
+                                @error="imageErrorMap[product.id] = true" />
                             <img v-else class="product-img-thumb" src="/default-image.svg" alt="暂无图片" />
                         </td>
                         <td>{{ product.name }}</td>
@@ -275,8 +277,8 @@ const editing = ref(false)
 const isCreating = ref<boolean>(false)
 const activeTab = ref<'product' | 'category'>('product')
 
-/** 打开详情时的原图：用于判断编辑时是否换过图（换图后取消需回滚删除新图） */
 const originalEditImage = ref('')
+const pendingFiles: Record<string, File> = {}
 
 const page = ref(1)
 const size = ref(parseInt(getConfig('page_size')) || 10)
@@ -290,13 +292,9 @@ const alertThreshold = ref(0)
 
 function normalizeImage(src: string): string {
     if (!src) return ''
-    if (/^https?:/i.test(src)) return src
+    if (/^https?:/i.test(src) || /^blob:/i.test(src)) return src
     if (/^\//.test(src)) return src
     return '/' + src
-}
-
-function onImageError(id: number) {
-    imageErrorMap.value[id] = true
 }
 
 function formatPrice(n: number): string {
@@ -347,7 +345,7 @@ async function loadData() {
 }
 
 /**
- * 组装综合筛选查询参数（keyword/categoryId/priceMin/priceMax/status），空条件不携带
+ * 组装综合筛选查询参数
  */
 function buildFilterParams(): string {
     const params = new URLSearchParams()
@@ -437,18 +435,38 @@ function openCreate() {
     isCreating.value = true
 }
 
-async function cancelCreate() {
-    // 取消创建：清理已上传但未保存的图片，避免野图片残留
-    if (createForm.value.image) {
-        await rollbackImage(createForm.value.image)
-        createForm.value.image = ''
+function cancelCreate() {
+    // 释放未保存的本地预览
+    if (pendingFiles['create']) {
+        if (/^blob:/i.test(createForm.value.image)) {
+            URL.revokeObjectURL(createForm.value.image)
+        }
+        delete pendingFiles['create']
     }
+    createForm.value.image = ''
     isCreating.value = false
     error.value = ''
 }
 
 async function createNewProduct() {
     error.value = ''
+    if (pendingFiles['create']) {
+        try {
+            const formData = new FormData()
+            formData.append('file', pendingFiles['create'])
+            const res = await upload<string>('/upload', formData)
+            if (!res.success || !res.data) {
+                error.value = '图片上传失败：' + (res.message || '未知错误')
+                return
+            }
+            URL.revokeObjectURL(createForm.value.image)
+            createForm.value.image = res.data
+            delete pendingFiles['create']
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : '网络错误'
+            return
+        }
+    }
     try {
         const res = await post<{ code: number; message: string }>('/products', {...createForm.value})
         if (res.success) {
@@ -456,48 +474,27 @@ async function createNewProduct() {
             await loadData()
         } else {
             error.value = res.message || '新增失败'
-            // 创建失败：回滚删除刚上传的图片，避免野图片残留
-            await rollbackImage(createForm.value.image)
-            createForm.value.image = ''
         }
     } catch (e) {
         error.value = e instanceof Error ? e.message : '网络错误'
     }
 }
 
-async function rollbackImage(imageUrl: string) {
-    if (!imageUrl) return
-    try {
-        await del(`/upload?url=${encodeURIComponent(imageUrl)}`)
-    } catch {
-        // 忽略删除失败
-    }
-}
-
 /**
- * 图片上传：FormData 发送到 /upload，成功后写入对应表单的 image 字段
+ * 图片选择处理：仅生成本地预览，待保存时才上传到后端
  */
-async function handleImageUpload(e: Event, target: 'create' | 'edit') {
+function handleImageUpload(e: Event, target: 'create' | 'edit') {
     const input = e.target as HTMLInputElement
     const file = input.files?.[0]
     if (!file) return
 
-    try {
-        const formData = new FormData()
-        formData.append('file', file)
-        const res = await upload<string>('/upload', formData)
-        if (res.success && res.data) {
-            if (target === 'create') {
-                createForm.value.image = res.data
-            } else {
-                editForm.value.image = res.data
-            }
-        } else {
-            error.value = res.message || '图片上传失败'
-        }
-    } catch (err) {
-        error.value = err instanceof Error ? err.message : '网络错误'
+    error.value = ''
+    const form = target === 'create' ? createForm : editForm
+    if (pendingFiles[target] && /^blob:/i.test(form.value.image)) {
+        URL.revokeObjectURL(form.value.image)
     }
+    pendingFiles[target] = file
+    form.value.image = URL.createObjectURL(file)
     input.value = ''
 }
 
@@ -509,10 +506,13 @@ function showProduct(product: Product) {
     showing.value = true
 }
 
-async function cancelEdit() {
-    // 取消修改：若编辑时换过图且新图未保存，删除新图；商品仍引用原图，保留
-    if (editForm.value.image && editForm.value.image !== originalEditImage.value) {
-        await rollbackImage(editForm.value.image)
+function cancelEdit() {
+    if (pendingFiles['edit']) {
+        if (/^blob:/i.test(editForm.value.image)) {
+            URL.revokeObjectURL(editForm.value.image)
+        }
+        delete pendingFiles['edit']
+        editForm.value.image = originalEditImage.value
     }
     showing.value = false
     editing.value = false
@@ -521,6 +521,24 @@ async function cancelEdit() {
 
 async function saveEdit() {
     error.value = ''
+    if (pendingFiles['edit']) {
+        try {
+            const formData = new FormData()
+            formData.append('file', pendingFiles['edit'])
+            const res = await upload<string>('/upload', formData)
+            if (!res.success || !res.data) {
+                error.value = '图片上传失败：' + (res.message || '未知错误')
+                return
+            }
+            URL.revokeObjectURL(editForm.value.image)
+            editForm.value.image = res.data
+            delete pendingFiles['edit']
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : '网络错误'
+            return
+        }
+    }
+
     editing.value = !editing.value
     try {
         const res = await put<{ code: number; message: string }>('/products', {...editForm.value})

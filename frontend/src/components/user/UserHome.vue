@@ -5,15 +5,15 @@
       <h2>用户主页</h2>
       <p class="welcome">欢迎回来，{{ username }}</p>
       <div class="menu">
-        <div class="menu-item" @click="goTo('/user/shop')">
+        <div class="menu-item" @click="router.push('/user/shop')">
           <span class="menu-icon">🛍️</span>
           <span>商品商城</span>
         </div>
-        <div class="menu-item" @click="goTo('/user/cart')">
+        <div class="menu-item" @click="router.push('/user/cart')">
           <span class="menu-icon">🛒</span>
           <span>我的购物车</span>
         </div>
-        <div class="menu-item" @click="goTo('/user/myOrders')">
+        <div class="menu-item" @click="router.push('/user/myOrders')">
           <span class="menu-icon">📦</span>
           <span>我的订单</span>
         </div>
@@ -52,9 +52,5 @@ async function exit() {
   localStorage.removeItem('role')
   localStorage.removeItem('username')
   router.push('/login')
-}
-
-function goTo(path: string) {
-  router.push(path)
 }
 </script>

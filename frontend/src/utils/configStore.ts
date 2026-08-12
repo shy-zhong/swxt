@@ -44,17 +44,10 @@ export async function loadConfig(): Promise<void> {
 }
 
 /**
- * 获取指定配置项的值（未找到返回空字符串）
+ * 获取指定配置项的值
  */
 export function getConfig(key: string): string {
   return configStore.configs[key] ?? ''
-}
-
-/**
- * 是否已加载完成
- */
-export function isLoaded(): boolean {
-  return configStore.loaded
 }
 
 export { configStore }

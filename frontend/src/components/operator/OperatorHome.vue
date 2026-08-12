@@ -5,19 +5,19 @@
       <h2>操作员中心</h2>
       <p class="welcome">操作员 {{ username }}，您好</p>
       <div class="menu">
-        <div class="menu-item" v-on:click="goTo('/operator/stockManager')">
+        <div class="menu-item" v-on:click="router.push('/operator/stockManager')">
           <span class="menu-icon">📦</span>
           <span>出入库管理</span>
         </div>
-        <div class="menu-item" v-on:click="goTo('/operator/orders')">
+        <div class="menu-item" v-on:click="router.push('/operator/orders')">
           <span class="menu-icon">📋</span>
           <span>订单管理</span>
         </div>
-        <div class="menu-item" v-on:click="goTo('/operator/stockLog')">
+        <div class="menu-item" v-on:click="router.push('/operator/stockLog')">
           <span class="menu-icon">📦</span>
           <span>出入库记录</span>
         </div>
-        <div class="menu-item" v-on:click="goTo('/operator/settings')">
+        <div class="menu-item" v-on:click="router.push('/operator/settings')">
           <span class="menu-icon">⚙️</span>
           <span>系统设置</span>
         </div>
@@ -52,9 +52,5 @@ async function exit() {
   localStorage.removeItem('role')
   localStorage.removeItem('username')
   router.push('/login')
-}
-
-function goTo(path: string) {
-  router.push(path)
 }
 </script>

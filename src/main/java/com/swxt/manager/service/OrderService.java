@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 订单服务：创建订单（扣减库存）、查询订单与更新状态
+ * 订单服务：创建订单、查询订单与更新状态
  */
 @Service
 public class OrderService {
@@ -30,7 +30,7 @@ public class OrderService {
     private ProductMapper productMapper;
 
     /**
-     * 创建订单：校验商品与库存，写入订单主表与订单项（不再自动扣减库存，由操作员在出入库管理中按订单出库）
+     * 创建订单：校验商品与库存，写入订单主表与订单项
      */
     @Transactional
     public OrderInfo createOrder(Long userId, String username, CreateOrderRequest request) {
@@ -50,6 +50,12 @@ public class OrderService {
                 throw new BusinessException(Core.ResultCode.BAD_REQUEST, "商品已下架: " + product.getName());
             }
             if (product.getStock() < itemReq.getQuantity()) {
+                throw new BusinessException(Core.ResultCode.BAD_REQUEST, "库存不足: " + product.getName());
+            }
+
+            // 扣减库存
+            int affected = productMapper.updateStock(product.getId(), -itemReq.getQuantity());
+            if (affected == 0) {
                 throw new BusinessException(Core.ResultCode.BAD_REQUEST, "库存不足: " + product.getName());
             }
 

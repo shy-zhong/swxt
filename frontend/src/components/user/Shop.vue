@@ -51,7 +51,7 @@
 
     <Pagination :page="currentPage" :total="allProducts.length" :totalPages="totalPages" @change="goToPage" />
 
-    <ModalPanel :visible="detailVisible" title="商品详情" @close="closeDetail">
+    <ModalPanel :visible="detailVisible" title="商品详情" @close="detailVisible = false">
         <div class="form-row form-row-image">
           <label>商品图片</label>
           <img v-if="detailProduct.image" class="form-image-preview" :src="normalizeImage(detailProduct.image)" alt="预览" />
@@ -84,12 +84,11 @@
         <template #actions>
           <button class="action-btn" @click="addToCart(detailProduct)">加入购物车</button>
           <button class="action-btn buy-now" @click="openBuyPanel(detailProduct)">立即购买</button>
-          <button class="cancel-btn" @click="closeDetail">关闭</button>
+          <button class="cancel-btn" @click="detailVisible = false">关闭</button>
         </template>
     </ModalPanel>
 
-    <!-- 立即购买确认面板：确认数量与收货信息后直接下单 -->
-    <ModalPanel :visible="buyVisible" title="确认订单" @close="closeBuyPanel">
+    <ModalPanel :visible="buyVisible" title="确认订单" @close="buyVisible = false">
         <div class="form-row">
           <label>商品</label>
           <input :value="buyProduct.name" type="text" disabled />
@@ -120,7 +119,7 @@
         </div>
         <template #actions>
           <button class="action-btn buy-now" @click="confirmBuy">确认购买</button>
-          <button class="cancel-btn" @click="closeBuyPanel">取消</button>
+          <button class="cancel-btn" @click="buyVisible = false">取消</button>
         </template>
     </ModalPanel>
   </div>
@@ -312,10 +311,6 @@ async function showDetail(product: Product) {
   }
 }
 
-function closeDetail() {
-  detailVisible.value = false
-}
-
 /**
  * 立即购买：打开确认面板（确认数量与收货信息），不再经过购物车
  */
@@ -325,20 +320,15 @@ async function openBuyPanel(product: Product) {
   buyForm.value = { receiverName: '', receiverPhone: '', receiverAddress: '' }
   error.value = ''
   buyVisible.value = true
-  // 预填当前登录用户信息（真实姓名/手机号），失败时不阻塞手动填写
   try {
     const res = await get<UserInfo>('/users/me')
     if (res.success && res.data) {
       buyForm.value.receiverName = res.data.realName || ''
       buyForm.value.receiverPhone = res.data.phone || ''
     }
-  } catch {
-    // 忽略预填失败
+  } catch(e) {
+    console.error(e); 
   }
-}
-
-function closeBuyPanel() {
-  buyVisible.value = false
 }
 
 function increaseBuyQty() {
@@ -364,7 +354,7 @@ async function confirmBuy() {
     return
   }
   try {
-    const res = await post<{ id: number }>('/orders', {
+    const res = await post<{ id: number }>('/orders?fromCart=false', {
       items: [{ productId: buyProduct.value.id, quantity: buyQuantity.value }],
       remark: '立即购买',
       receiverName: buyForm.value.receiverName.trim(),

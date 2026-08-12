@@ -5,27 +5,27 @@
       <h2>管理后台</h2>
       <p class="welcome">管理员 {{ username }}，您好</p>
       <div class="menu">
-        <div class="menu-item" v-on:click="goTo('/admin/users')">
+        <div class="menu-item" v-on:click="router.push('/admin/users')">
           <span class="menu-icon">👥</span>
           <span>用户管理</span>
         </div>
-        <div class="menu-item" v-on:click="goTo('/admin/products')">
+        <div class="menu-item" v-on:click="router.push('/admin/products')">
           <span class="menu-icon">📦</span>
           <span>商品管理</span>
         </div>
-        <div class="menu-item" v-on:click="goTo('/admin/orders')">
+        <div class="menu-item" v-on:click="router.push('/admin/orders')">
           <span class="menu-icon">📋</span>
           <span>订单查看</span>
         </div>
-        <div class="menu-item" v-on:click="goTo('/admin/statistics')">
+        <div class="menu-item" v-on:click="router.push('/admin/statistics')">
           <span class="menu-icon">📊</span>
           <span>数据统计</span>
         </div>
-        <div class="menu-item" v-on:click="goTo('/admin/settings')">
+        <div class="menu-item" v-on:click="router.push('/admin/settings')">
           <span class="menu-icon">⚙️</span>
           <span>系统设置</span>
         </div>
-        <div class="menu-item" v-on:click="goTo('/admin/logs')">
+        <div class="menu-item" v-on:click="router.push('/admin/logs')">
           <span class="menu-icon">📝</span>
           <span>系统日志</span>
         </div>
@@ -60,9 +60,5 @@ async function exit() {
   localStorage.removeItem('role')
   localStorage.removeItem('username')
   router.push('/login')
-}
-
-function goTo(path: string) {
-  router.push(path)
 }
 </script>
