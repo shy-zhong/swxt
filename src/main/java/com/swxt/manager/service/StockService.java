@@ -7,7 +7,7 @@ import com.swxt.manager.entity.OrderItem;
 import com.swxt.manager.entity.StockRecord;
 import com.swxt.manager.mysql.OrderMapper;
 import com.swxt.manager.mysql.StockRecordMapper;
-import com.swxt.manager.mysql.UserMapping;
+import com.swxt.manager.mysql.ProductMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,7 @@ public class StockService {
     private StockRecordMapper stockRecordMapper;
 
     @Autowired
-    private UserMapping userMapping;
+    private ProductMapper productMapper;
 
     @Autowired
     private OrderMapper orderMapper;
@@ -36,7 +36,7 @@ public class StockService {
         if (quantity <= 0) {
             throw new BusinessException(Core.ResultCode.BAD_REQUEST, "入库数量必须大于 0");
         }
-        int rows = userMapping.updateStock(productId, quantity);
+        int rows = productMapper.updateStock(productId, quantity);
         if (rows == 0) {
             return false;
         }
@@ -57,7 +57,7 @@ public class StockService {
         if (quantity <= 0) {
             throw new BusinessException(Core.ResultCode.BAD_REQUEST, "出库数量必须大于 0");
         }
-        int rows = userMapping.updateStock(productId, -quantity);
+        int rows = productMapper.updateStock(productId, -quantity);
         if (rows == 0) {
             return false;
         }
@@ -102,7 +102,7 @@ public class StockService {
             throw new BusinessException(Core.ResultCode.BAD_REQUEST, "订单项为空");
         }
         for (OrderItem item : items) {
-            int rows = userMapping.updateStock(item.getProductId(), -item.getQuantity());
+            int rows = productMapper.updateStock(item.getProductId(), -item.getQuantity());
             if (rows == 0) {
                 throw new BusinessException(Core.ResultCode.BAD_REQUEST, "库存不足，出库失败: " + item.getProductName());
             }
@@ -135,7 +135,7 @@ public class StockService {
             throw new BusinessException(Core.ResultCode.BAD_REQUEST, "订单项为空");
         }
         for (OrderItem item : items) {
-            int rows = userMapping.updateStock(item.getProductId(), item.getQuantity());
+            int rows = productMapper.updateStock(item.getProductId(), item.getQuantity());
             if (rows == 0) {
                 throw new BusinessException(Core.ResultCode.BAD_REQUEST, "退货入库失败: " + item.getProductName());
             }

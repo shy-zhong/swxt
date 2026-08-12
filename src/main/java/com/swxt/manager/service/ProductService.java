@@ -2,7 +2,7 @@ package com.swxt.manager.service;
 
 import com.swxt.manager.dto.PageResult;
 import com.swxt.manager.entity.Product;
-import com.swxt.manager.mysql.UserMapping;
+import com.swxt.manager.mysql.ProductMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,7 @@ import java.util.List;
 public class ProductService {
 
     @Autowired
-    private UserMapping userMapping;
+    private ProductMapper productMapper;
 
     @Autowired
     private SystemConfigService systemConfigService;
@@ -35,8 +35,8 @@ public class ProductService {
             size = 10;
         }
         int offset = (page - 1) * size;
-        List<Product> list = userMapping.listProductsPage(offset, size);
-        long total = userMapping.countProducts();
+        List<Product> list = productMapper.listProductsPage(offset, size);
+        long total = productMapper.countProducts();
         return new PageResult<>(list, total, page, size);
     }
 
@@ -58,13 +58,13 @@ public class ProductService {
         List<Product> list;
         long total;
         if (hasFilter) {
-            list = userMapping.listProductsFilterPage(
+            list = productMapper.listProductsFilterPage(
                     keyword == null ? null : keyword.trim(), categoryId, priceMin, priceMax, status, offset, size);
-            total = userMapping.countProductsFilter(
+            total = productMapper.countProductsFilter(
                     keyword == null ? null : keyword.trim(), categoryId, priceMin, priceMax, status);
         } else {
-            list = userMapping.listProductsPage(offset, size);
-            total = userMapping.countProducts();
+            list = productMapper.listProductsPage(offset, size);
+            total = productMapper.countProducts();
         }
         return new PageResult<>(list, total, page, size);
     }
@@ -73,7 +73,7 @@ public class ProductService {
      * 商品详情：按 ID 查询（含分类名称），不存在返回 null
      */
     public Product getProductDetail(Long id) {
-        return userMapping.getProductById(id);
+        return productMapper.getProductById(id);
     }
 
     /**
@@ -88,8 +88,8 @@ public class ProductService {
             size = 10;
         }
         int offset = (page - 1) * size;
-        List<Product> list = userMapping.searchProductsPage(value, offset, size);
-        long total = userMapping.countSearchProducts(value);
+        List<Product> list = productMapper.searchProductsPage(value, offset, size);
+        long total = productMapper.countSearchProducts(value);
         return new PageResult<>(list, total, page, size);
     }
 
@@ -98,23 +98,23 @@ public class ProductService {
      */
     public boolean createProduct(Product product) {
         product.setStatus(systemConfigService.getSystemConfigInt("default_product_status"));
-        return userMapping.createProduct(product) > 0;
+        return productMapper.createProduct(product) > 0;
     }
 
     /**
      * 修改商品信息，返回是否更新成功
      */
     public boolean updateProduct(Product product) {
-        return userMapping.updateProduct(product) > 0;
+        return productMapper.updateProduct(product) > 0;
     }
 
     /**
      * 删除商品，同步删除本地图片
      */
     public boolean deleteProduct(Long id) {
-        Product product = userMapping.getProductById(id);
+        Product product = productMapper.getProductById(id);
         if (product == null) return false;
-        boolean deleted = userMapping.deleteProductById(id) > 0;
+        boolean deleted = productMapper.deleteProductById(id) > 0;
         if (deleted) {
             fileService.deleteByUrl(product.getImage());
         }

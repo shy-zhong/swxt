@@ -8,7 +8,7 @@ import com.swxt.manager.entity.OrderInfo;
 import com.swxt.manager.entity.OrderItem;
 import com.swxt.manager.entity.Product;
 import com.swxt.manager.mysql.OrderMapper;
-import com.swxt.manager.mysql.UserMapping;
+import com.swxt.manager.mysql.ProductMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +27,7 @@ public class OrderService {
     private OrderMapper orderMapper;
 
     @Autowired
-    private UserMapping userMapping;
+    private ProductMapper productMapper;
 
     /**
      * 创建订单：校验商品与库存，写入订单主表与订单项（不再自动扣减库存，由操作员在出入库管理中按订单出库）
@@ -42,7 +42,7 @@ public class OrderService {
         List<OrderItem> items = new ArrayList<>();
 
         for (CreateOrderRequest.OrderItemRequest itemReq : request.getItems()) {
-            Product product = userMapping.getProductById(itemReq.getProductId());
+            Product product = productMapper.getProductById(itemReq.getProductId());
             if (product == null) {
                 throw new BusinessException(Core.ResultCode.NOT_FOUND, "商品不存在: " + itemReq.getProductId());
             }

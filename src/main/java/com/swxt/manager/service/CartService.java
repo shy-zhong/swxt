@@ -5,7 +5,7 @@ import com.swxt.manager.config.Core;
 import com.swxt.manager.dto.cart.CartItemVO;
 import com.swxt.manager.entity.Product;
 import com.swxt.manager.mysql.CartMapper;
-import com.swxt.manager.mysql.UserMapping;
+import com.swxt.manager.mysql.ProductMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +21,7 @@ public class CartService {
     private CartMapper cartMapper;
 
     @Autowired
-    private UserMapping userMapping;
+    private ProductMapper productMapper;
 
     /**
      * 查询用户购物车列表（含商品实时信息）
@@ -47,7 +47,7 @@ public class CartService {
         if (quantity == null || quantity <= 0) {
             throw new BusinessException(Core.ResultCode.BAD_REQUEST, "购买数量应大于0");
         }
-        Product product = userMapping.getProductById(productId);
+        Product product = productMapper.getProductById(productId);
         if (product == null) {
             throw new BusinessException(Core.ResultCode.NOT_FOUND, "商品不存在");
         }

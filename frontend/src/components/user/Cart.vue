@@ -41,9 +41,9 @@
             <td>{{ currencySymbol }}{{ formatPrice(item.price) }}</td>
             <td>
               <div class="qty-control">
-                <button class="qty-btn" @click="decreaseQty(item.id)">-</button>
-                <span class="qty-num">{{ item.quantity }}</span>
-                <button class="qty-btn" @click="increaseQty(item.id)">+</button>
+                <button class="qty-btn" @click="setQty(item.id,item.quantity-1)">-</button>
+                <input type="number" class="qty-num" v-value="item.quantity" @change="e => setQty(item.id,Number((e.target as HTMLInputElement).value))" />
+                <button class="qty-btn" @click="setQty(item.id,item.quantity+1)">+</button>
               </div>
             </td>
             <td>{{ currencySymbol }}{{ formatPrice(item.price * item.quantity) }}</td>
@@ -113,29 +113,14 @@ async function loadCart() {
   }
 }
 
-async function increaseQty(id: number) {
+async function setQty(id: number ,quantity : number) {
   const item = cartItems.value.find(i => i.id === id)
   if (!item) return
-  const res = await put('/cart', { id, quantity: item.quantity + 1 })
+  const res = await put('/cart', { id, quantity: quantity})
   if (res.success) {
     item.quantity += 1
   } else {
     error.value = res.message || '操作失败'
-  }
-}
-
-async function decreaseQty(id: number) {
-  const item = cartItems.value.find(i => i.id === id)
-  if (!item) return
-  if (item.quantity > 1) {
-    const res = await put('/cart', { id, quantity: item.quantity - 1 })
-    if (res.success) {
-      item.quantity -= 1
-    } else {
-      error.value = res.message || '操作失败'
-    }
-  } else {
-    await removeItem(id)
   }
 }
 
