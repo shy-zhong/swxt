@@ -113,14 +113,19 @@ async function loadCart() {
   }
 }
 
-async function setQty(id: number ,quantity : number) {
+async function setQty(id: number, quantity: number) {
+  if (quantity < 1) return
   const item = cartItems.value.find(i => i.id === id)
   if (!item) return
-  const res = await put('/cart', { id, quantity: quantity})
-  if (res.success) {
-    item.quantity += 1
-  } else {
-    error.value = res.message || '操作失败'
+  try {
+    const res = await put('/cart', { id, quantity })
+    if (res.success) {
+      item.quantity = quantity
+    } else {
+      error.value = res.message || '操作失败'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '操作失败'
   }
 }
 

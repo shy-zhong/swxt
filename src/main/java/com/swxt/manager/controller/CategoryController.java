@@ -26,7 +26,7 @@ public class CategoryController {
     }
 
     /**
-     * 查询全部分类（登录用户可用）
+     * 查询全部分类
      */
     @GetMapping
     public Result<List<Category>> list() {
@@ -64,7 +64,7 @@ public class CategoryController {
     }
 
     /**
-     * 删除分类（仅管理员）
+     * 删除分类
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")

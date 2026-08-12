@@ -40,16 +40,20 @@ public interface CategoryMapper {
     List<Long> findIdsByParentId(Long parentId);
 
 /**
- * 统计多个分类中被商品引用的数量（product.category_id 命中任意一个）
+ * 统计多个分类中被商品引用的数量
  */
-    @Select("<script>SELECT COUNT(*) FROM product WHERE category_id IN " +
-            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach></script>")
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM product WHERE category_id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach>" +
+            "</script>")
     long countProductsByCategoryIds(@Param("ids") List<Long> ids);
 
 /**
  * 批量删除多个分类（级联删除）
  */
-    @Delete("<script>DELETE FROM category WHERE id IN " +
-            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach></script>")
+    @Delete("<script>" +
+            "DELETE FROM category WHERE id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach>" +
+            "</script>")
     int deleteByIds(@Param("ids") List<Long> ids);
 }

@@ -51,9 +51,6 @@ public class CategoryService {
 
     /**
      * 按 ID 删除分类，级联删除其全部子孙分类，返回是否成功
-     *
-     * <p>规则：分类不存在时抛 404；自身或任一子孙被商品引用时拒绝删除；
-     * 通过校验后连同全部子孙分类一并删除，事务保证原子性。</p>
      */
     @Transactional
     public boolean delete(Long id) {
@@ -69,7 +66,7 @@ public class CategoryService {
     }
 
     /**
-     * 收集指定分类及其全部子孙的 ID（深度优先遍历，层级不限）
+     * 收集指定分类及其全部子孙的 ID
      */
     private List<Long> collectIdsWithDescendants(Long rootId) {
         List<Long> ids = new ArrayList<>();

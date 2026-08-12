@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 文件上传控制器（仅管理员）
+ * 文件上传控制器
  */
 @RestController
 public class FileController {
@@ -27,7 +27,6 @@ public class FileController {
 
     /**
      * 上传图片：UUID 重命名后保存本地，返回可访问的 URL 路径
-     * @param type 文件类型（product/config），默认 product
      */
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
@@ -39,8 +38,7 @@ public class FileController {
     }
 
     /**
-     * 删除已上传但未使用的图片（商品创建/编辑失败时回滚清理，避免野图片）
-     * @param url 图片访问路径，如 /uploads/product/xxx.png
+     * 删除已上传但未使用的图片
      */
     @DeleteMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
