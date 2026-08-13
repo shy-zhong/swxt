@@ -49,7 +49,6 @@ public interface SystemLogMapper {
                    @Param("targetType") String targetType,
                    @Param("result") String result);
 
-    /** 清空全部日志 */
     @Delete("TRUNCATE TABLE system_log")
     int deleteAll();
 }

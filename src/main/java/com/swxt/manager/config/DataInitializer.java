@@ -1,15 +1,8 @@
 package com.swxt.manager.config;
 
-import com.swxt.manager.dto.register.RegisterRequest;
-import com.swxt.manager.entity.User;
-import com.swxt.manager.mysql.UserMapping;
-import com.swxt.manager.service.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 @Component

@@ -6,7 +6,7 @@ import com.swxt.manager.dto.PageResult;
 import com.swxt.manager.dto.register.RegisterRequest;
 import com.swxt.manager.dto.user.UpdateUserRequest;
 import com.swxt.manager.entity.User;
-import com.swxt.manager.mysql.UserMapping;
+import com.swxt.manager.mysql.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ import java.util.List;
 public class UserService {
 
     @Autowired
-    UserMapping userMapping;
+    UserMapper userMapper;
 
     @Autowired
     private SystemConfigService systemConfigService;
@@ -29,25 +29,25 @@ public class UserService {
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 /**
- * 登录校验：keyword 支持用户名或用户 ID，校验通过返回用户，失败返回 null
+ * 登录校验
  */
     public User login(String keyword, String password) {
         User user = null;
 
         try {
             Long id = Long.parseLong(keyword);
-            user = userMapping.loginById(id.toString());
+            user = userMapper.loginById(id.toString());
         } catch (NumberFormatException e) {
 
         }
 
         if (user == null) {
-            int count = userMapping.countByUsername(keyword);
+            int count = userMapper.countByUsername(keyword);
             if (count > 1) {
                 throw new RuntimeException("存在多个同名用户，请使用ID登录");
             }
             if (count == 1) {
-                user = userMapping.loginByUsername(keyword);
+                user = userMapper.loginByUsername(keyword);
             }
         }
 
@@ -66,7 +66,7 @@ public class UserService {
     }
 
 /**
- * 注册新用户：校验系统配置（是否开放注册、密码长度），密码加密后入库
+ * 注册新用户
  */
     public User register(RegisterRequest request,boolean skipSystemConfig) {
         if (!systemConfigService.getSystemConfigBoolean("allow_register")
@@ -84,7 +84,7 @@ public class UserService {
         if (user.getStatus() == null) {
             user.setStatus(1);
         }
-        if (userMapping.createNewUser(user) <= 0) {
+        if (userMapper.createNewUser(user) <= 0) {
             throw new BusinessException(Core.ResultCode.SERVER_ERROR, "注册失败");
         }
 
@@ -92,14 +92,14 @@ public class UserService {
     }
 
 /**
- * 查询全部用户（不分页）
+ * 查询全部用户
  */
     public List<User> listUsers() {
-        return userMapping.listUsers();
+        return userMapper.listUsers();
     }
 
 /**
- * 按字段与值分页搜索用户：key 为空时回退到普通分页列表，否则模糊查询后内存分页
+ * 按字段与值分页搜索用户
  */
     public PageResult<User> searchUsersByCondition(String key, String value, int page, int size) {
         if (key.isEmpty()) return listUsersPage(page, size);
@@ -110,8 +110,8 @@ public class UserService {
             size = 10;
         }
         int offset = (page - 1) * size;
-        List<User> list = userMapping.searchUsersPage(key, value, offset, size);
-        long total = userMapping.countSearchUsers(key, value);
+        List<User> list = userMapper.searchUsersPage(key, value, offset, size);
+        long total = userMapper.countSearchUsers(key, value);
         return new PageResult<>(list, total, page, size);
     }
 
@@ -126,13 +126,13 @@ public class UserService {
             size = 10;
         }
         int offset = (page - 1) * size;
-        List<User> list = userMapping.listUsersPage(offset, size);
-        long total = userMapping.countUsers();
+        List<User> list = userMapper.listUsersPage(offset, size);
+        long total = userMapper.countUsers();
         return new PageResult<>(list, total, page, size);
     }
 
     /**
-     * 用户分页查询，支持按关键词模糊搜索（用户名/真实姓名/手机号/邮箱）；关键词为空时回退到全量分页
+     * 用户分页查询
      */
     public PageResult<User> listUsersPage(int page, int size, String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -145,31 +145,31 @@ public class UserService {
             size = 10;
         }
         int offset = (page - 1) * size;
-        List<User> list = userMapping.listUsersKeywordPage(keyword.trim(), offset, size);
-        long total = userMapping.countUsersKeyword(keyword.trim());
+        List<User> list = userMapper.listUsersKeywordPage(keyword.trim(), offset, size);
+        long total = userMapper.countUsersKeyword(keyword.trim());
         return new PageResult<>(list, total, page, size);
     }
 
 /**
- * 按 ID 查询用户（含软删除过滤），用于获取当前登录用户信息
+ * 按 ID 查询用户
  */
     public User getUserById(Long id) {
-        return userMapping.loginById(String.valueOf(id));
+        return userMapper.loginById(String.valueOf(id));
     }
 
 /**
- * 删除用户，返回是否删除成功
+ * 删除用户
  */
     public boolean deleteUser(Long id) {
-        return userMapping.deleteUserById(id) > 0;
+        return userMapper.deleteUserById(id) > 0;
     }
 
 /**
- * 更新用户信息与权限，返回是否更新成功
+ * 更新用户信息与权限
  */
     public boolean updateUser(UpdateUserRequest request) {
         User user = new User();
         BeanUtils.copyProperties(request, user);
-        return userMapping.updateUser(user) > 0;
+        return userMapper.updateUser(user) > 0;
     }
 }
