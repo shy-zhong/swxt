@@ -86,7 +86,7 @@ public class StockService {
     }
 
     /**
-     * 根据订单出库：遍历订单项扣减库存并写出库记录，订单状态置为已完成
+     * 根据订单出库：库存已在创建订单时扣减，此处仅写出库记录，订单状态置为已完成
      */
     @Transactional
     public boolean stockOutByOrder(Long orderId, String operator) {
@@ -102,10 +102,6 @@ public class StockService {
             throw new BusinessException(Core.ResultCode.BAD_REQUEST, "订单项为空");
         }
         for (OrderItem item : items) {
-            int rows = productMapper.updateStock(item.getProductId(), -item.getQuantity());
-            if (rows == 0) {
-                throw new BusinessException(Core.ResultCode.BAD_REQUEST, "库存不足，出库失败: " + item.getProductName());
-            }
             StockRecord record = new StockRecord();
             record.setProductId(item.getProductId());
             record.setType("OUT");

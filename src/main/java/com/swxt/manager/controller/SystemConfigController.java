@@ -20,7 +20,7 @@ public class SystemConfigController {
     private final SystemLogService logService;
 
     /**
-     * 构造系统配置控制器：注入配置服务与日志服务
+     * 构造系统配置控制器
      */
     public SystemConfigController(SystemConfigService systemConfigService, SystemLogService logService) {
         this.systemConfigService = systemConfigService;

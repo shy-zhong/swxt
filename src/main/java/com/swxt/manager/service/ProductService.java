@@ -41,7 +41,7 @@ public class ProductService {
     }
 
     /**
-     * 商品分页查询，支持组合筛选：keyword（名称模糊）、categoryId（精确）、priceMin/priceMax（价格区间）、status（状态）；
+     * 商品分页查询
      * 全部条件为空时回退到全量分页
      */
     public PageResult<Product> listProductsPage(int page, int size, String keyword, Long categoryId,
@@ -70,7 +70,7 @@ public class ProductService {
     }
 
     /**
-     * 商品详情：按 ID 查询（含分类名称），不存在返回 null
+     * 商品详情
      */
     public Product getProductDetail(Long id) {
         return productMapper.getProductById(id);

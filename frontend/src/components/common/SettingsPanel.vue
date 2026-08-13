@@ -105,6 +105,7 @@ const CATEGORY_MAP: Record<string, { title: string; type: 'text' | 'number' | 's
     low_stock_threshold: { title: '库存设置', type: 'number' },
     enable_stock_warning: { title: '库存设置', type: 'switch' },
     default_product_status: { title: '商品设置', type: 'text' },
+    show_disabled_products: { title: '商品设置', type: 'switch' },
 }
 
 /** 分组与状态 */

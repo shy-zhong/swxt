@@ -42,7 +42,7 @@ public class OrderController {
     }
 
     /**
-     * 分页查询当前用户的订单
+     * 查询当前用户的订单
      */
     @GetMapping("/my")
     @PreAuthorize("hasRole('USER')")
@@ -56,7 +56,7 @@ public class OrderController {
     }
 
     /**
-     * 查询全部订单
+     * 分页查询全部订单
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('OPERATOR','ADMIN')")

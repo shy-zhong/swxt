@@ -189,7 +189,7 @@ CREATE TABLE `system_config` (
 
 LOCK TABLES `system_config` WRITE;
 /*!40000 ALTER TABLE `system_config` DISABLE KEYS */;
-INSERT INTO `system_config` VALUES (1,'site_name','商城管理系统','站点名称'),(2,'site_description','一站式商品管理平台','站点描述'),(3,'contact_phone','81097566','联系电话'),(4,'contact_email','25555555@swxt.com','联系邮箱'),(5,'default_product_status','1','新商品默认状态'),(6,'low_stock_threshold','80','库存预警阈值'),(7,'enable_stock_warning','false','是否开启库存预警'),(8,'allow_register','true','是否允许用户自注册'),(9,'default_user_role','USER','默认用户角色'),(10,'password_min_length','6','密码最小长度'),(11,'currency_symbol','$','货币符号'),(14,'homepage_background','','网站首页背景图URL'),(15,'page_size','15','列表每页显示数据量'),(16,'enable_log','true','是否开启操作日志');
+INSERT INTO `system_config` VALUES (1,'site_name','商城管理系统','站点名称'),(2,'site_description','一站式商品管理平台','站点描述'),(3,'contact_phone','81097566','联系电话'),(4,'contact_email','25555555@swxt.com','联系邮箱'),(5,'default_product_status','1','新商品默认状态'),(6,'low_stock_threshold','80','库存预警阈值'),(7,'enable_stock_warning','false','是否开启库存预警'),(8,'allow_register','true','是否允许用户自注册'),(9,'default_user_role','USER','默认用户角色'),(10,'password_min_length','6','密码最小长度'),(11,'currency_symbol','$','货币符号'),(14,'homepage_background','','网站首页背景图URL'),(15,'page_size','15','列表每页显示数据量'),(16,'enable_log','true','是否开启操作日志'),(17,'show_disabled_products','false','是否展示已下架（状态为0）的商品');
 /*!40000 ALTER TABLE `system_config` ENABLE KEYS */;
 UNLOCK TABLES;
 

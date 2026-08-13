@@ -30,7 +30,7 @@ public class OrderService {
     private ProductMapper productMapper;
 
     /**
-     * 创建订单：校验商品与库存，写入订单主表与订单项
+     * 创建订单
      */
     @Transactional
     public OrderInfo createOrder(Long userId, String username, CreateOrderRequest request) {
@@ -49,10 +49,6 @@ public class OrderService {
             if (product.getStatus() != 1) {
                 throw new BusinessException(Core.ResultCode.BAD_REQUEST, "商品已下架: " + product.getName());
             }
-            if (product.getStock() < itemReq.getQuantity()) {
-                throw new BusinessException(Core.ResultCode.BAD_REQUEST, "库存不足: " + product.getName());
-            }
-
             // 扣减库存
             int affected = productMapper.updateStock(product.getId(), -itemReq.getQuantity());
             if (affected == 0) {
@@ -78,7 +74,7 @@ public class OrderService {
         order.setReceiverName(request.getReceiverName());
         order.setReceiverPhone(request.getReceiverPhone());
         order.setReceiverAddress(request.getReceiverAddress());
-        orderMapper.insertOrder(order);
+        orderMapper.createOrder(order);
 
         for (OrderItem item : items) {
             item.setOrderId(order.getId());
@@ -90,18 +86,7 @@ public class OrderService {
     }
 
     /**
-     * 按用户 ID 查询订单列表（含订单项）
-     */
-    public List<OrderInfo> listByUserId(Long userId) {
-        List<OrderInfo> orders = orderMapper.listByUserId(userId);
-        for (OrderInfo order : orders) {
-            order.setItems(orderMapper.listItemsByOrderId(order.getId()));
-        }
-        return orders;
-    }
-
-    /**
-     * 按用户 ID 分页查询订单（含订单项，支持按状态与关键词筛选）
+     * 按用户 ID 分页查询订单
      */
     public PageResult<OrderInfo> listByUserIdPage(Long userId, int page, int size, String status, String keyword) {
         if (page < 1) {
@@ -120,18 +105,7 @@ public class OrderService {
     }
 
     /**
-     * 查询全部订单（含订单项）
-     */
-    public List<OrderInfo> listAll() {
-        List<OrderInfo> orders = orderMapper.listAll();
-        for (OrderInfo order : orders) {
-            order.setItems(orderMapper.listItemsByOrderId(order.getId()));
-        }
-        return orders;
-    }
-
-    /**
-     * 分页查询全部订单（含订单项，支持按状态与关键词筛选）
+     * 分页查询全部订单
      */
     public PageResult<OrderInfo> listAllPage(int page, int size, String status, String keyword) {
         if (page < 1) {

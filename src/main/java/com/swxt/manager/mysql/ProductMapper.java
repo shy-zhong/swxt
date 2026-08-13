@@ -111,7 +111,7 @@ public interface ProductMapper {
     int deleteProductById(Long id);
 
 /**
- * 增减库存：quantity 为正则入库，为负则出库；出库时校验库存不为负
+ * 增减库存
  */
     @Update("UPDATE product SET stock = stock + #{quantity} WHERE id = #{id} AND stock + #{quantity} >= 0")
     int updateStock(@Param("id") Long id, @Param("quantity") int quantity);

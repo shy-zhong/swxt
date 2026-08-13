@@ -6,6 +6,7 @@ import com.swxt.manager.dto.PageResult;
 import com.swxt.manager.dto.Result;
 import com.swxt.manager.entity.Product;
 import com.swxt.manager.service.ProductService;
+import com.swxt.manager.service.SystemConfigService;
 import com.swxt.manager.service.SystemLogService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -13,22 +14,24 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 
 /**
- * 商品控制器：商品列表/详情/搜索（登录可用），增删改商品（仅管理员）
+ * 商品控制器
  */
 @RestController
 @RequestMapping("/products")
 public class ProductController {
 
     private final ProductService productService;
+    private final SystemConfigService systemConfigService;
     private final SystemLogService logService;
 
-    public ProductController(ProductService productService, SystemLogService logService) {
+    public ProductController(ProductService productService, SystemConfigService systemConfigService, SystemLogService logService) {
         this.productService = productService;
+        this.systemConfigService = systemConfigService;
         this.logService = logService;
     }
 
     /**
-     * 商品分页列表（支持综合筛选：keyword 名称模糊、categoryId 精确、priceMin/priceMax 价格区间、status 状态）
+     * 商品分页列表
      */
     @GetMapping
     public Result<PageResult<Product>> list(
@@ -40,9 +43,10 @@ public class ProductController {
             @RequestParam(value = "priceMax", required = false) BigDecimal priceMax,
             @RequestParam(value = "status", required = false) Integer status
     ) {
-        // 非管理员未显式指定状态时，默认只看在售商品（商城不展示已下架商品，避免加购报错）
         if (status == null && !"ADMIN".equals(SecurityUtil.getRole())) {
-            status = 1;
+            if (!systemConfigService.getSystemConfigBoolean("show_disabled_products")) {
+                status = 1;
+            }
         }
         PageResult<Product> result = productService.listProductsPage(page, size, keyword, categoryId, priceMin, priceMax, status);
         return Result.success(result);
@@ -72,8 +76,9 @@ public class ProductController {
         if ("ADMIN".equals(SecurityUtil.getRole())) {
             result = productService.searchProductsByCondition(value, page, size);
         } else {
-            // 非管理员搜索仅返回在售商品
-            result = productService.listProductsPage(page, size, value, null, null, null, 1);
+            // 非管理员：根据配置决定是否展示已下架商品
+            Integer productStatus = systemConfigService.getSystemConfigBoolean("show_disabled_products") ? null : 1;
+            result = productService.listProductsPage(page, size, value, null, null, null, productStatus);
         }
         return Result.success(result);
     }

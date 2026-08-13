@@ -27,7 +27,7 @@ public interface SystemConfigMapper {
     SystemConfig getByKey(String configKey);
 
     /**
-     * 按 ID 更新配置项（键、值、描述）
+     * 按 ID 更新配置项
      */
     @Update("UPDATE system_config SET config_key = #{configKey}, config_value = #{configValue}, " +
             "description = #{description} WHERE id = #{id}")
@@ -38,4 +38,11 @@ public interface SystemConfigMapper {
      */
     @Update("UPDATE system_config SET config_value = #{configValue} WHERE config_key = #{configKey}")
     int updateValueByKey(@Param("configKey") String configKey, @Param("configValue") String configValue);
+
+    /**
+     * 新增配置项
+     */
+    @Insert("INSERT INTO system_config(config_key, config_value, description) " +
+            "VALUES(#{configKey}, #{configValue}, #{description})")
+    int insert(SystemConfig config);
 }
