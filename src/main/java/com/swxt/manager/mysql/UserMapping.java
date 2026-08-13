@@ -9,7 +9,7 @@ import java.util.List;
 public interface UserMapping {
 
 /**
- * 按用户名查询用户（登录用）
+ * 查询用户
  */
     @Select("SELECT * FROM user WHERE username = #{username} AND deleted = 0")
     User loginByUsername(String username);
@@ -17,6 +17,9 @@ public interface UserMapping {
     @Select("SELECT * FROM user WHERE id = #{id} AND deleted = 0")
     User loginById(String id);
 
+/**
+ *统计用户
+ */
     @Select("SELECT COUNT(*) FROM user WHERE username = #{username} AND deleted = 0")
     int countByUsername(String username);
 
@@ -26,9 +29,9 @@ public interface UserMapping {
     @Select("SELECT * FROM user WHERE deleted = 0 ORDER BY id ASC LIMIT #{offset}, #{size}")
     List<User> listUsersPage(@Param("offset") int offset, @Param("size") int size);
 
-    /**
-     * 按指定字段模糊搜索用户（字段名动态拼接，值使用 LIKE 模糊匹配）
-     */
+/**
+ * 按指定字段模糊搜索用户
+ */
     @Select("SELECT * FROM user " +
             "WHERE ${key} LIKE CONCAT('%', #{value}, '%') AND deleted = 0 " +
             "ORDER BY id ASC LIMIT #{offset}, #{size}")
@@ -44,9 +47,9 @@ public interface UserMapping {
     @Select("SELECT COUNT(*) FROM user WHERE deleted = 0")
     long countUsers();
 
-    /**
-     * 按关键词模糊搜索用户（用户名/真实姓名/手机号/邮箱）
-     */
+ /**
+  * 按关键词模糊搜索用户
+  */
     @Select("SELECT * FROM user WHERE deleted = 0 " +
             "AND (username LIKE CONCAT('%', #{keyword}, '%') " +
             "OR real_name LIKE CONCAT('%', #{keyword}, '%') " +
@@ -65,19 +68,21 @@ public interface UserMapping {
     long countUsersKeyword(@Param("keyword") String keyword);
 
 /**
- * 新增用户（密码为 BCrypt 加密后的密文）
+ * 新增用户
  */
     @Insert("INSERT INTO user(username, password, role, real_name, phone, email, wechat_openid, status) " +
             "VALUES(#{username}, #{password}, #{role}, #{realName}, #{phone}, #{email}, #{wechatOpenid}, #{status})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int createNewUser(User user);
-
+/**
+ *  删除用户
+ */
     @Update("UPDATE user SET deleted = 1 WHERE id = #{id} AND deleted = 0")
     int deleteUserById(Long id);
 
 
 /**
- * 更新用户基本信息、角色与状态（不修改密码）
+ * 更新用户基本信息、角色与状态
  */
     @Update("UPDATE user SET username = #{username}, real_name = #{realName}, phone = #{phone}, " +
             "email = #{email}, wechat_openid = #{wechatOpenid}, role = #{role}, status = #{status} " +
