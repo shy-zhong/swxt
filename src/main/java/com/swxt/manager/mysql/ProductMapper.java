@@ -13,7 +13,7 @@ import java.util.List;
 public interface ProductMapper {
 
 /**
- * 商品分页查询（含分类名称），按 ID 升序
+ * 商品分页查询，按 ID 升序
  */
     @Select("SELECT p.*, c.name AS category_name FROM product p " +
             "LEFT JOIN category c ON p.category_id = c.id " +
@@ -21,7 +21,7 @@ public interface ProductMapper {
     List<Product> listProductsPage(@Param("offset") int offset, @Param("size") int size);
 
 /**
- * 按关键词搜索商品（名称/描述模糊）
+ * 按关键词搜索商品
  */
     @Select("SELECT p.*, c.name AS category_name FROM product p " +
             "LEFT JOIN category c ON p.category_id = c.id " +
@@ -59,7 +59,7 @@ public interface ProductMapper {
                                          @Param("size") int size);
 
     /**
-     * 综合筛选商品总数（与 listProductsFilterPage 同条件）
+     * 综合筛选商品总数
      */
     @Select("<script>" +
             "SELECT COUNT(*) FROM product p WHERE 1=1 " +

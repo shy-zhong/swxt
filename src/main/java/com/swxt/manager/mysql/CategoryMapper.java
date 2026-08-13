@@ -34,7 +34,7 @@ public interface CategoryMapper {
     int update(Category category);
 
 /**
- * 查询指定父分类下的直接子分类 ID 列表（用于递归收集子孙）
+ * 查询指定父分类下的直接子分类 ID 列表
  */
     @Select("SELECT id FROM category WHERE parent_id = #{parentId}")
     List<Long> findIdsByParentId(Long parentId);
@@ -49,7 +49,7 @@ public interface CategoryMapper {
     long countProductsByCategoryIds(@Param("ids") List<Long> ids);
 
 /**
- * 批量删除多个分类（级联删除）
+ * 批量删除多个分类
  */
     @Delete("<script>" +
             "DELETE FROM category WHERE id IN " +

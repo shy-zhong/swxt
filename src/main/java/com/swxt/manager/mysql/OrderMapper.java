@@ -6,9 +6,6 @@ import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
-/**
- * 订单 Mapper：创建订单、查询订单列表与订单项明细
- */
 public interface OrderMapper {
 
     /**
@@ -39,7 +36,7 @@ public interface OrderMapper {
     List<OrderInfo> listByUserId(@Param("userId") Long userId);
 
     /**
-     * 按用户 ID 分页查询订单（支持按状态与关键词筛选）
+     * 按用户 ID 分页查询订单
      */
     @Select("<script>SELECT * FROM orders WHERE user_id = #{userId}" +
             "<if test='status != null and status != \"\"'> AND status = #{status}</if>" +
@@ -50,7 +47,7 @@ public interface OrderMapper {
                                      @Param("keyword") String keyword);
 
     /**
-     * 统计用户订单总数（支持按状态与关键词筛选）
+     * 统计用户订单总数
      */
     @Select("<script>SELECT COUNT(*) FROM orders WHERE user_id = #{userId}" +
             "<if test='status != null and status != \"\"'> AND status = #{status}</if>" +
@@ -60,13 +57,13 @@ public interface OrderMapper {
                        @Param("keyword") String keyword);
 
     /**
-     * 查询全部订单（按时间倒序）
+     * 查询全部订单
      */
     @Select("SELECT * FROM orders ORDER BY created_at DESC")
     List<OrderInfo> listAll();
 
     /**
-     * 分页查询全部订单（按时间倒序，支持按状态与关键词筛选）
+     * 分页查询全部订单
      */
     @Select("<script>SELECT * FROM orders WHERE 1=1" +
             "<if test='status != null and status != \"\"'> AND status = #{status}</if>" +
@@ -76,7 +73,7 @@ public interface OrderMapper {
                                 @Param("status") String status, @Param("keyword") String keyword);
 
     /**
-     * 统计订单总数（支持按状态与关键词筛选）
+     * 统计订单总数
      */
     @Select("<script>SELECT COUNT(*) FROM orders WHERE 1=1" +
             "<if test='status != null and status != \"\"'> AND status = #{status}</if>" +

@@ -25,7 +25,7 @@ public interface StockRecordMapper {
     List<StockRecord> listByProductId(@Param("productId") Long productId);
 
     /**
-     * 查询全部出入库记录（按时间倒序）
+     * 查询全部出入库记录
      */
     @Select("SELECT * FROM stock_record ORDER BY created_at DESC")
     List<StockRecord> listAll();

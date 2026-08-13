@@ -16,7 +16,7 @@ public interface StatisticsMapper {
     long countProducts();
 
     /**
-     * 启用商品数（status = 1）
+     * 启用商品数
      */
     @Select("SELECT COUNT(*) FROM product WHERE status = 1")
     long countActiveProducts();
@@ -31,13 +31,13 @@ public interface StatisticsMapper {
     long countAdminUsers();
 
     /**
-     * 库存总量（所有商品库存之和）
+     * 库存总量
      */
     @Select("SELECT IFNULL(SUM(stock), 0) FROM product")
     long sumStock();
 
     /**
-     * 库存价值（库存 × 单价 累加）
+     * 库存价值
      */
     @Select("SELECT IFNULL(SUM(stock * price), 0) FROM product")
     double sumStockValue();
@@ -61,7 +61,7 @@ public interface StatisticsMapper {
     double minPrice();
 
     /**
-     * 按分类聚合：分类下的商品数、库存、平均价
+     * 按分类聚合
      */
     @Select("SELECT c.id AS category_id, c.name AS category_name, " +
         "COUNT(p.id) AS count, " +
@@ -73,7 +73,7 @@ public interface StatisticsMapper {
     List<Map<String, Object>> categoryAgg();
 
     /**
-     * 价格区间聚合：按 5 个区间统计商品数量（r1~r5）
+     * 价格区间聚合
      */
     @Select("SELECT " +
             "SUM(CASE WHEN price >= 0 AND price < 100 THEN 1 ELSE 0 END) AS r1, " +
