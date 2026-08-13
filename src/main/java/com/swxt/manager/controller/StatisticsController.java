@@ -40,6 +40,7 @@ public class StatisticsController {
             @RequestParam(value = "size", defaultValue = "10") int size) {
         return Result.success(statisticsService.stockRecordPage(page, size));
     }
+
     /**
      * 库存流水条件查询
      */

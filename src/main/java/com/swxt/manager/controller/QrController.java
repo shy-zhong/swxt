@@ -26,34 +26,23 @@ public class QrController {
     }
 
     /**
-     * 创建二维码登录会话：返回 sceneId 与授权地址
+     * 创建二维码登录会话
      */
     @PostMapping("/create")
-    public Result<Map<String, String>> create(@RequestParam("redirectBase") String redirectBase) {
-        Map<String, String> result = weChatService.createQrLogin(redirectBase);
+    public Result<Map<String, String>> create() {
+        Map<String, String> session = weChatService.createQrLogin();
+        String qrBase64 = qrCodeService.createCodeToBase64(session.get("authUrl"));
+        if (qrBase64 == null) {
+            return Result.error("二维码生成失败");
+        }
+        Map<String, String> result = new HashMap<>();
+        result.put("sceneId", session.get("sceneId"));
+        result.put("qrBase64", qrBase64);
         return Result.success(result);
     }
 
     /**
-     * 输出二维码图片：内容为授权地址
-     */
-    @GetMapping("/image")
-    public void image(@RequestParam("sceneId") String sceneId,
-                      @RequestParam(value = "authUrl", required = false) String authUrl,
-                      HttpServletResponse response) throws IOException {
-        if (authUrl == null || authUrl.isEmpty()) {
-            Map<String, String> session = weChatService.getQrAuthUrl(sceneId);
-            if (session == null) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "二维码会话不存在或已过期");
-                return;
-            }
-            authUrl = session.get("authUrl");
-        }
-        qrCodeService.createCodeToStream(authUrl, response);
-    }
-
-    /**
-     * 微信授权回调：手机端扫码后在微信内静默授权，跳回此地址完成登录
+     * 微信授权回调
      */
     @GetMapping("/callback")
     public void callback(@RequestParam("code") String code,
@@ -72,22 +61,19 @@ public class QrController {
         }
     }
 
-    /**
-     * PC 端轮询登录状态：logged=true 时携带 token/username/role
-     */
     @GetMapping("/status")
     public Result<Map<String, Object>> status(@RequestParam("sceneId") String sceneId) {
-        WeChatService.QrLoginState state = weChatService.getQrLoginState(sceneId);
+        WeChatService.QrLoginState state = weChatService.consumeQrLogin(sceneId);
         Map<String, Object> data = new HashMap<>();
         if (state == null) {
-            data.put("status", "expired");
+            data.put("status", "invalid");
             return Result.success(data);
         }
-        if (state.isLogged()) {
+        if (state.logged()) {
             data.put("status", "success");
-            data.put("token", state.getToken());
-            data.put("username", state.getUsername());
-            data.put("role", state.getRole());
+            data.put("token", state.token());
+            data.put("username", state.username());
+            data.put("role", state.role());
         } else {
             data.put("status", "waiting");
         }

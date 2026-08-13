@@ -4,8 +4,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.extra.qrcode.QrCodeException;
 import cn.hutool.extra.qrcode.QrCodeUtil;
 import cn.hutool.extra.qrcode.QrConfig;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,20 +16,18 @@ import org.springframework.stereotype.Service;
 public class QrCodeService {
     @Autowired
     private QrConfig qrConfig;
-    public void createCodeToFile(String content, String filePath) {
+    /**
+     * 生成二维码并返回 base64 字符串
+     */
+    public String createCodeToBase64(String content) {
         try {
-            QrCodeUtil.generate(content,qrConfig, FileUtil.file(filePath));
-        } catch (QrCodeException e) {
-            log.error("二维码生成到文件失败, content={}, path={}", content, filePath, e);
-        }
-    }
-    public void createCodeToStream(String content, HttpServletResponse response) {
-        try {
-            response.setContentType("image/png");
-            response.setHeader("Cache-Control", "no-store");
-            QrCodeUtil.generate(content,qrConfig, "png", response.getOutputStream());
+            BufferedImage image = QrCodeUtil.generate(content, qrConfig);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(image, "png", out);
+            return java.util.Base64.getEncoder().encodeToString(out.toByteArray());
         } catch (QrCodeException | IOException e) {
-            log.error("二维码生成到输出流失败, content={}", content, e);
+            log.error("二维码生成 base64 失败, content={}", content, e);
+            return null;
         }
     }
 }

@@ -6,7 +6,6 @@ import com.swxt.manager.Utils.JwtUtil;
 import com.swxt.manager.config.Core;
 import com.swxt.manager.entity.User;
 import com.swxt.manager.mysql.UserMapper;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -35,22 +34,23 @@ public class WeChatService {
     @Value("${wechat.secret:}")
     private String secret;
 
+    @Value("${wechat.redirect-base:}")
+    private String redirectBase;
+
     private final Map<String, QrLoginState> qrSessions = new ConcurrentHashMap<>();
 
-    private static final long QR_EXPIRE_MS = 5 * 60 * 1000L;
+    private volatile String fixedSceneId;
 
     /**
      * 二维码登录会话状态
      */
-    @Data
-    public static class QrLoginState {
-        private long expireAt;
-        private boolean logged;
-        private String token;
-        private String username;
-        private String role;
-        private String authUrl;
-
+    public record QrLoginState(boolean logged, String token, String username, String role, String authUrl) {
+        static QrLoginState waiting(String authUrl) {
+            return new QrLoginState(false, null, null, null, authUrl);
+        }
+        QrLoginState loggedIn(String token, String username, String role) {
+            return new QrLoginState(true, token, username, role, authUrl);
+        }
     }
 
     public WeChatService(UserMapper userMapper, SystemConfigService systemConfigService, JwtUtil jwtUtil) {
@@ -89,13 +89,18 @@ public class WeChatService {
         return user;
     }
 
-    /**
-     * 创建二维码登录会话
-     */
-    public Map<String, String> createQrLogin(String redirectBase) {
-        String sceneId = UUID.randomUUID().toString().replace("-", "");
-        QrLoginState state = new QrLoginState();
-        state.setExpireAt(System.currentTimeMillis() + QR_EXPIRE_MS);
+
+    public Map<String, String> createQrLogin() {
+        String sceneId = fixedSceneId;
+        if (sceneId == null) {
+            synchronized (this) {
+                sceneId = fixedSceneId;
+                if (sceneId == null) {
+                    sceneId = UUID.randomUUID().toString().replace("-", "");
+                    fixedSceneId = sceneId;
+                }
+            }
+        }
 
         String redirectUri = redirectBase + "/api/login/wechat/qr/callback";
         String authUrl = "https://open.weixin.qq.com/connect/oauth2/authorize" +
@@ -105,21 +110,8 @@ public class WeChatService {
                 "&scope=snsapi_base" +
                 "&state=" + sceneId +
                 "#wechat_redirect";
-        state.setAuthUrl(authUrl);
-
-        qrSessions.put(sceneId, state);
+        qrSessions.put(sceneId, QrLoginState.waiting(authUrl));
         return Map.of("sceneId", sceneId, "authUrl", authUrl);
-    }
-
-    /**
-     * 按 sceneId 查询会话的授权地址
-     */
-    public Map<String, String> getQrAuthUrl(String sceneId) {
-        QrLoginState state = getQrLoginState(sceneId);
-        if (state == null || state.getAuthUrl() == null) {
-            return null;
-        }
-        return Map.of("authUrl", state.getAuthUrl());
     }
 
     /**
@@ -127,32 +119,26 @@ public class WeChatService {
      */
     public boolean handleQrCallback(String sceneId, String code) {
         QrLoginState state = qrSessions.get(sceneId);
-        if (state == null || state.isLogged() || state.getExpireAt() < System.currentTimeMillis()) {
+        if (state == null) {
             return false;
         }
         User user = loginByWeChat(code);
         if (user == null) {
             return false;
         }
-        state.setLogged(true);
-        state.setToken(jwtUtil.generateToken(user));
-        state.setUsername(user.getUsername());
-        state.setRole(user.getRole().name());
+        qrSessions.put(sceneId, state.loggedIn(jwtUtil.generateToken(user), user.getUsername(), user.getRole().name()));
         return true;
     }
 
     /**
-     * 查询二维码登录会话状态，并清理过期会话
+     * PC 端取走登录结果
      */
-    public QrLoginState getQrLoginState(String sceneId) {
+    public QrLoginState consumeQrLogin(String sceneId) {
         QrLoginState state = qrSessions.get(sceneId);
-        if (state == null) {
-            return null;
+        if (state == null || !state.logged()) {
+            return state;
         }
-        if (state.getExpireAt() < System.currentTimeMillis()) {
-            qrSessions.remove(sceneId);
-            return null;
-        }
+        qrSessions.put(sceneId, QrLoginState.waiting(state.authUrl()));
         return state;
     }
 

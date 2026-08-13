@@ -131,7 +131,7 @@ function normalizeImage(src: string): string {
 }
 
 /**
- * 图片选择处理：仅生成本地预览，待保存时才上传到后端
+ * 图片选择处理
  */
 function handleImageUpload(e: Event, item: SystemConfig) {
     const input = e.target as HTMLInputElement

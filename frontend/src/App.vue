@@ -13,7 +13,6 @@ onMounted(() => {
 </script>
 
 <template>
-  
   <RouterView />
   <SystemFooter />
 </template>

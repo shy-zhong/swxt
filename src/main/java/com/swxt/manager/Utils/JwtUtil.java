@@ -58,7 +58,7 @@ public class JwtUtil {
     }
 
     /**
-     * 解析令牌并返回 Claims（校验签名与过期时间）
+     * 解析令牌并返回 Claims
      */
     public Claims parseToken(String token) {
         return Jwts.parser()
@@ -69,7 +69,7 @@ public class JwtUtil {
     }
 
     /**
-     * 校验令牌是否合法（签名正确且未过期）
+     * 校验令牌是否合法
      */
     public boolean validateToken(String token) {
         try {
@@ -81,7 +81,7 @@ public class JwtUtil {
     }
 
     /**
-     * 从令牌中取出用户名（主题）
+     * 从令牌中取出用户名
      */
     public String getUsernameFromToken(String token) {
 
