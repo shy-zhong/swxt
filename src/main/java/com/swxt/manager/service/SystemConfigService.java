@@ -47,22 +47,6 @@ public class SystemConfigService {
             cache.put(c.getConfigKey(), c.getConfigValue());
         }
         log.info("系统配置缓存已加载，共 {} 项", cache.size());
-        ensureDefault("show_disabled_products", "false", "是否展示已下架（状态为0）的商品");
-    }
-
-/**
- * 配置项缺失时自动补建默认值（首次启动或升级时生效）
- */
-    private void ensureDefault(String key, String defaultValue, String description) {
-        if (!cache.containsKey(key)) {
-            SystemConfig config = new SystemConfig();
-            config.setConfigKey(key);
-            config.setConfigValue(defaultValue);
-            config.setDescription(description);
-            systemConfigMapper.insert(config);
-            cache.put(key, defaultValue);
-            log.info("已自动补建配置项：{}", key);
-        }
     }
 
 /**
