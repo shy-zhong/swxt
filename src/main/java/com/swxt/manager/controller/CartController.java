@@ -33,7 +33,7 @@ public class CartController {
     }
 
     /**
-     * 查询当前用户购物车商品种类数（角标用）
+     * 查询当前用户购物车商品种类数
      */
     @GetMapping("/count")
     public Result<Integer> count() {

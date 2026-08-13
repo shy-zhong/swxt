@@ -38,7 +38,7 @@ public interface ProductMapper {
     long countSearchProducts(@Param("value") String value);
 
     /**
-     * 综合筛选商品：keyword（名称模糊）、categoryId（精确）、priceMin/priceMax（价格区间）、status（状态），动态拼接
+     * 综合筛选商品
      */
     @Select("<script>" +
             "SELECT p.*, c.name AS category_name FROM product p " +
@@ -90,7 +90,7 @@ public interface ProductMapper {
     int createProduct(Product product);
 
 /**
- * 按 ID 查询商品（含分类名称）
+ * 按 ID 查询商品
  */
     @Select("SELECT p.*, c.name AS category_name FROM product p " +
             "LEFT JOIN category c ON p.category_id = c.id WHERE p.id = #{id}")

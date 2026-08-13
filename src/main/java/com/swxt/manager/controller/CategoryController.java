@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 分类控制器：查询分类（登录可用），增删改分类（仅管理员）
+ * 分类控制器
  */
 @RestController
 @RequestMapping("/categories")

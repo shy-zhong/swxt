@@ -83,7 +83,7 @@ public class StockController {
     }
 
     /**
-     * 根据订单出库：扣减订单中各商品库存并写出库记录，订单状态置为已完成
+     * 根据订单出库
      */
     @PostMapping("/order/{orderId}/out")
     @PreAuthorize("hasRole('OPERATOR')")
@@ -99,7 +99,7 @@ public class StockController {
     }
 
     /**
-     * 根据订单退货入库：退回订单中各商品库存并写入库记录，订单状态置为已取消
+     * 根据订单退货入库
      */
     @PostMapping("/order/{orderId}/in")
     @PreAuthorize("hasRole('OPERATOR')")

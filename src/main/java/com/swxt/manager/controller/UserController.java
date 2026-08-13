@@ -24,9 +24,7 @@ public class UserController {
     private final JwtUtil jwtUtil;
     private final SystemLogService logService;
     private final SecurityUtil securityUtil;
-    /**
-     * 构造用户控制器：注入用户服务、JWT 工具与日志服务
-     */
+
     public UserController(UserService userService, JwtUtil jwtUtil, SystemLogService logService, SecurityUtil securityUtil) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
@@ -35,7 +33,7 @@ public class UserController {
     }
 
     /**
-     * 登录：校验用户名/密码，成功则签发 JWT 令牌并记录日志
+     * 登录
      */
     @PostMapping("/login")
     public Result<LoginResponse> login(@RequestBody LoginRequest request) {
@@ -52,7 +50,7 @@ public class UserController {
     }
 
     /**
-     * 注册：校验失败由 BusinessException 抛出，全局异常处理器统一拦截
+     * 注册
      */
     @PostMapping("/register")
     public Result<RegisterResponse> register(@RequestBody RegisterRequest request,
@@ -75,7 +73,7 @@ public class UserController {
         return Result.success();
     }
     /**
-     * 用户分页列表（支持 keyword 模糊搜索用户名/真实姓名/手机号/邮箱）
+     * 用户分页列表
      */
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
@@ -102,7 +100,7 @@ public class UserController {
     }
 
     /**
-     * 查询当前登录用户信息（含真实姓名/手机号等，用于下单表单预填）
+     * 查询当前登录用户信息
      */
     @GetMapping("/users/me")
     public Result<User> currentUser() {

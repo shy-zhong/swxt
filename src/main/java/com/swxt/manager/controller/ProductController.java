@@ -43,27 +43,28 @@ public class ProductController {
             @RequestParam(value = "priceMax", required = false) BigDecimal priceMax,
             @RequestParam(value = "status", required = false) Integer status
     ) {
-        if (status == null) {
-            String role = SecurityUtil.getRole();
-            if ("USER".equals(role)) {
-                // USER：始终隐藏已下架商品
-                status = 1;
-            } else if (!systemConfigService.getSystemConfigBoolean("show_disabled_products")) {
-                // 其他身份：根据配置决定
-                status = 1;
-            }
+        String role = SecurityUtil.getRole();
+        if ("USER".equals(role)) {
+            status = 1;
+        } else if (status == null && !systemConfigService.getSystemConfigBoolean("show_disabled_products")) {
+            status = 1;
         }
         PageResult<Product> result = productService.listProductsPage(page, size, keyword, categoryId, priceMin, priceMax, status);
         return Result.success(result);
     }
 
     /**
-     * 商品详情：按 ID 查询（含分类名称），供用户端详情页与管理端查询使用
+     * 商品详情
      */
     @GetMapping("/{id}")
     public Result<Product> detail(@PathVariable Long id) {
         Product product = productService.getProductDetail(id);
         if (product == null) {
+            return Result.error(404, "商品不存在");
+        }
+        // 下架商品权限校验：USER 始终不可见
+        if (product.getStatus() != null && product.getStatus() != 1
+                && "USER".equals(SecurityUtil.getRole())) {
             return Result.error(404, "商品不存在");
         }
         return Result.success(product);
@@ -80,13 +81,10 @@ public class ProductController {
         PageResult<Product> result;
         String role = SecurityUtil.getRole();
         if ("USER".equals(role)) {
-            // USER：始终隐藏已下架商品
             result = productService.listProductsPage(page, size, value, null, null, null, 1);
         } else if (systemConfigService.getSystemConfigBoolean("show_disabled_products")) {
-            // 其他身份且配置允许：搜索全部商品
             result = productService.searchProductsByCondition(value, page, size);
         } else {
-            // 其他身份且配置不允许：仅搜索在售商品
             result = productService.listProductsPage(page, size, value, null, null, null, 1);
         }
         return Result.success(result);

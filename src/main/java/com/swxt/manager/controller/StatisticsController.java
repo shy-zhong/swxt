@@ -17,9 +17,6 @@ public class StatisticsController {
 
     private final StatisticsService statisticsService;
 
-    /**
-     * 构造统计控制器：注入统计服务
-     */
     public StatisticsController(StatisticsService statisticsService) {
         this.statisticsService = statisticsService;
     }

@@ -26,7 +26,7 @@ public class FileController {
     }
 
     /**
-     * 上传图片：UUID 重命名后保存本地，返回可访问的 URL 路径
+     * 上传图片
      */
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")

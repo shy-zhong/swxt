@@ -27,7 +27,7 @@ public class SystemLogController {
     }
 
     /**
-     * 分页查询系统日志，支持按用户名、操作类型、操作对象、结果筛选
+     * 分页查询系统日志
      */
     @GetMapping
     public Result<PageResult<SystemLog>> list(

@@ -42,7 +42,6 @@ public class ProductService {
 
     /**
      * 商品分页查询
-     * 全部条件为空时回退到全量分页
      */
     public PageResult<Product> listProductsPage(int page, int size, String keyword, Long categoryId,
                                                 BigDecimal priceMin, BigDecimal priceMax, Integer status) {
