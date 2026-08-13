@@ -10,6 +10,21 @@
 - 前端构建: `cd frontend && npm run build`(vue-tsc -b && vite build,产物在 `frontend/dist`)
 - 建库脚本: `swxt.sql`(库名 `swxt`;连接配置见 `src/main/resources/application.properties`)
 
+## 环境工具路径
+
+本机未将以下工具加入系统 PATH，执行编译/运行/git/mysql 命令前需临时补全环境变量:
+
+- JDK 17（JAVA_HOME）：`D:\Program Files\Java\jdk-17`
+- MySQL 客户端：`D:\Program Files\MySQL\MySQL Server 8.0\bin`
+- Git：`D:\Program Files\Git\bin`
+- PowerShell（`mvnw.cmd` 内部调用）：`C:\Windows\System32\WindowsPowerShell\v1.0`
+
+编译/运行前设置环境:
+```powershell
+$env:PATH = 'D:\Program Files\Git\bin;D:\Program Files\MySQL\MySQL Server 8.0\bin;C:\Windows\System32\WindowsPowerShell\v1.0;' + $env:PATH
+$env:JAVA_HOME = 'D:\Program Files\Java\jdk-17'
+```
+
 ## Architecture
 
 - `src/main/java/com/swxt/manager/config/` — 公共配置:`Core.java`(枚举:Role/ActionType/TargetType/LogResult/ResultCode)、`JwtUtil`+`JwtAuthenticationFilter`(JWT 认证)、`SecurityConfig`(放行 `/login` `/register` `/system-config/public` 与 OPTIONS,其余需认证)、`CorsConfig`、`GlobalExceptionHandler`+`BusinessException`、`DataInitializer`

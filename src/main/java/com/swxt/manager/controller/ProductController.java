@@ -43,8 +43,13 @@ public class ProductController {
             @RequestParam(value = "priceMax", required = false) BigDecimal priceMax,
             @RequestParam(value = "status", required = false) Integer status
     ) {
-        if (status == null && !"ADMIN".equals(SecurityUtil.getRole())) {
-            if (!systemConfigService.getSystemConfigBoolean("show_disabled_products")) {
+        if (status == null) {
+            String role = SecurityUtil.getRole();
+            if ("USER".equals(role)) {
+                // USER：始终隐藏已下架商品
+                status = 1;
+            } else if (!systemConfigService.getSystemConfigBoolean("show_disabled_products")) {
+                // 其他身份：根据配置决定
                 status = 1;
             }
         }
@@ -73,12 +78,16 @@ public class ProductController {
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         PageResult<Product> result;
-        if ("ADMIN".equals(SecurityUtil.getRole())) {
+        String role = SecurityUtil.getRole();
+        if ("USER".equals(role)) {
+            // USER：始终隐藏已下架商品
+            result = productService.listProductsPage(page, size, value, null, null, null, 1);
+        } else if (systemConfigService.getSystemConfigBoolean("show_disabled_products")) {
+            // 其他身份且配置允许：搜索全部商品
             result = productService.searchProductsByCondition(value, page, size);
         } else {
-            // 非管理员：根据配置决定是否展示已下架商品
-            Integer productStatus = systemConfigService.getSystemConfigBoolean("show_disabled_products") ? null : 1;
-            result = productService.listProductsPage(page, size, value, null, null, null, productStatus);
+            // 其他身份且配置不允许：仅搜索在售商品
+            result = productService.listProductsPage(page, size, value, null, null, null, 1);
         }
         return Result.success(result);
     }
