@@ -32,6 +32,7 @@ public class SecurityConfig {
                         .requestMatchers("/login").permitAll()              
                         .requestMatchers("/register").permitAll()           
                         .requestMatchers("/login/wechat/callback").permitAll()
+                        .requestMatchers("/login/wechat/qr/**").permitAll()
                         .requestMatchers("/system-config/public").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

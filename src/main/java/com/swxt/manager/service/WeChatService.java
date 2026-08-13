@@ -6,6 +6,7 @@ import com.swxt.manager.Utils.JwtUtil;
 import com.swxt.manager.config.Core;
 import com.swxt.manager.entity.User;
 import com.swxt.manager.mysql.UserMapper;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -32,6 +34,24 @@ public class WeChatService {
 
     @Value("${wechat.secret:}")
     private String secret;
+
+    private final Map<String, QrLoginState> qrSessions = new ConcurrentHashMap<>();
+
+    private static final long QR_EXPIRE_MS = 5 * 60 * 1000L;
+
+    /**
+     * 二维码登录会话状态
+     */
+    @Data
+    public static class QrLoginState {
+        private long expireAt;
+        private boolean logged;
+        private String token;
+        private String username;
+        private String role;
+        private String authUrl;
+
+    }
 
     public WeChatService(UserMapper userMapper, SystemConfigService systemConfigService, JwtUtil jwtUtil) {
         this.userMapper = userMapper;
@@ -67,6 +87,73 @@ public class WeChatService {
         }
         log.info("成功: username={}, openid={}", user.getUsername(), openid);
         return user;
+    }
+
+    /**
+     * 创建二维码登录会话
+     */
+    public Map<String, String> createQrLogin(String redirectBase) {
+        String sceneId = UUID.randomUUID().toString().replace("-", "");
+        QrLoginState state = new QrLoginState();
+        state.setExpireAt(System.currentTimeMillis() + QR_EXPIRE_MS);
+
+        String redirectUri = redirectBase + "/api/login/wechat/qr/callback";
+        String authUrl = "https://open.weixin.qq.com/connect/oauth2/authorize" +
+                "?appid=" + appId +
+                "&redirect_uri=" + java.net.URLEncoder.encode(redirectUri, java.nio.charset.StandardCharsets.UTF_8) +
+                "&response_type=code" +
+                "&scope=snsapi_base" +
+                "&state=" + sceneId +
+                "#wechat_redirect";
+        state.setAuthUrl(authUrl);
+
+        qrSessions.put(sceneId, state);
+        return Map.of("sceneId", sceneId, "authUrl", authUrl);
+    }
+
+    /**
+     * 按 sceneId 查询会话的授权地址
+     */
+    public Map<String, String> getQrAuthUrl(String sceneId) {
+        QrLoginState state = getQrLoginState(sceneId);
+        if (state == null || state.getAuthUrl() == null) {
+            return null;
+        }
+        return Map.of("authUrl", state.getAuthUrl());
+    }
+
+    /**
+     * 处理二维码回调
+     */
+    public boolean handleQrCallback(String sceneId, String code) {
+        QrLoginState state = qrSessions.get(sceneId);
+        if (state == null || state.isLogged() || state.getExpireAt() < System.currentTimeMillis()) {
+            return false;
+        }
+        User user = loginByWeChat(code);
+        if (user == null) {
+            return false;
+        }
+        state.setLogged(true);
+        state.setToken(jwtUtil.generateToken(user));
+        state.setUsername(user.getUsername());
+        state.setRole(user.getRole().name());
+        return true;
+    }
+
+    /**
+     * 查询二维码登录会话状态，并清理过期会话
+     */
+    public QrLoginState getQrLoginState(String sceneId) {
+        QrLoginState state = qrSessions.get(sceneId);
+        if (state == null) {
+            return null;
+        }
+        if (state.getExpireAt() < System.currentTimeMillis()) {
+            qrSessions.remove(sceneId);
+            return null;
+        }
+        return state;
     }
 
     /**
