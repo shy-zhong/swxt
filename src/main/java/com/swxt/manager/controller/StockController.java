@@ -1,12 +1,12 @@
 package com.swxt.manager.controller;
 
+import com.swxt.manager.Utils.SecurityUtil;
 import com.swxt.manager.config.Core;
 import com.swxt.manager.dto.Result;
 import com.swxt.manager.dto.stock.StockOperateRequest;
 import com.swxt.manager.entity.StockRecord;
 import com.swxt.manager.service.StockService;
 import com.swxt.manager.service.SystemLogService;
-import com.swxt.manager.Utils.SecurityUtil;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 

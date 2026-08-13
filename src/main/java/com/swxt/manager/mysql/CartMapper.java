@@ -1,7 +1,6 @@
 package com.swxt.manager.mysql;
 
 import com.swxt.manager.dto.cart.CartItemVO;
-import com.swxt.manager.entity.CartItem;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;

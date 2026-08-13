@@ -1,18 +1,20 @@
 package com.swxt.manager.controller;
 
+import com.swxt.manager.Utils.JwtUtil;
 import com.swxt.manager.Utils.SecurityUtil;
 import com.swxt.manager.config.Core;
-import com.swxt.manager.Utils.JwtUtil;
 import com.swxt.manager.dto.PageResult;
 import com.swxt.manager.dto.Result;
 import com.swxt.manager.dto.login.LoginRequest;
 import com.swxt.manager.dto.login.LoginResponse;
+import com.swxt.manager.dto.login.WechatLoginRequest;
 import com.swxt.manager.dto.register.RegisterRequest;
 import com.swxt.manager.dto.register.RegisterResponse;
 import com.swxt.manager.dto.user.UpdateUserRequest;
 import com.swxt.manager.entity.User;
 import com.swxt.manager.service.SystemLogService;
 import com.swxt.manager.service.UserService;
+import com.swxt.manager.service.WeChatService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,12 +26,14 @@ public class UserController {
     private final JwtUtil jwtUtil;
     private final SystemLogService logService;
     private final SecurityUtil securityUtil;
+    private final WeChatService weChatService;
 
-    public UserController(UserService userService, JwtUtil jwtUtil, SystemLogService logService, SecurityUtil securityUtil) {
+    public UserController(UserService userService, JwtUtil jwtUtil, SystemLogService logService, SecurityUtil securityUtil, WeChatService weChatService) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.logService = logService;
         this.securityUtil = securityUtil;
+        this.weChatService = weChatService;
     }
 
     /**
@@ -46,6 +50,21 @@ public class UserController {
 
         logService.record(Core.ActionType.LOGIN, Core.TargetType.USER, user.getId(), Core.LogResult.SUCCESS);
 
+        return Result.success(new LoginResponse(token, user.getUsername(), user.getRole().name()));
+    }
+
+    /**
+     * 微信网页授权登录回调
+     */
+    @PostMapping("/login/wechat/callback")
+    public Result<LoginResponse> wechatLogin(@RequestBody WechatLoginRequest request) {
+        User user = weChatService.loginByWeChat(request.getCode());
+        if (user == null) {
+            logService.record(Core.ActionType.LOGIN, Core.TargetType.USER, null, Core.LogResult.FAIL);
+            return Result.of(Core.ResultCode.LOGIN_FAILED);
+        }
+        String token = jwtUtil.generateToken(user);
+        logService.record(Core.ActionType.LOGIN, Core.TargetType.USER, user.getId(), Core.LogResult.SUCCESS);
         return Result.success(new LoginResponse(token, user.getUsername(), user.getRole().name()));
     }
 

@@ -1,6 +1,5 @@
 package com.swxt.manager.dto.register;
 
-import com.swxt.manager.config.Core;
 import lombok.Data;
 
 

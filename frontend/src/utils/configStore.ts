@@ -1,8 +1,5 @@
-
-
-
-import { reactive } from 'vue'
-import { get } from './request'
+import {reactive} from 'vue'
+import {get} from './request'
 
 
 interface SystemConfig {

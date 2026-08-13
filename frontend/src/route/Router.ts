@@ -1,7 +1,5 @@
-
-
-import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
+import type {RouteRecordRaw} from 'vue-router'
+import {createRouter, createWebHistory} from 'vue-router'
 
 
 const routes: RouteRecordRaw[] = [
@@ -18,6 +16,11 @@ const routes: RouteRecordRaw[] = [
         path: '/register',
         name: 'Register',
         component: () => import('../components/common/Register.vue')
+    },
+    {
+        path: '/wechat/callback',
+        name: 'WechatCallback',
+        component: () => import('../components/common/WechatCallback.vue')
     },
     {
         path: '/user/home',
@@ -134,7 +137,7 @@ function getHomeByRole(): string {
 router.beforeEach((to) => {
     const token = localStorage.getItem('token')
 
-    if (to.path === '/login' || to.path === '/register') {
+    if (to.path === '/login' || to.path === '/register' || to.path === '/wechat/callback') {
         if (token && !isTokenExpired(token)) {
             return getHomeByRole()
         }

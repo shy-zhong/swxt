@@ -4,15 +4,16 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   server: {
+    allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev'],
     proxy: {
       '/api': {
-        target: 'http://localhost:8887',  // 转发到 Spring Boot
+        target: 'http://localhost:8887',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://localhost:8887',  // 图片统一由后端提供
+        target: 'http://localhost:8887',  
         changeOrigin: true,
-        rewrite: (path) => '/api' + path,  // 后端 context-path 为 /api
+        rewrite: (path) => '/api' + path,  
       },
     },
   }

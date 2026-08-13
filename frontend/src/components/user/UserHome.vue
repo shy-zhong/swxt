@@ -19,7 +19,7 @@
         </div>
         <div class="menu-item">
           <span class="menu-icon">👤</span>
-          <span>个人信息</span>
+          <span>个人信息(略)</span>
         </div>
       </div>
       <button class="exit-btn" @click="exit">退出登录</button>
